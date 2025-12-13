@@ -17,7 +17,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let supabaseResponse = NextResponse.next({ request })
+    // Create response object
+    const successUrl = new URL('/account', request.url)
+    const errorUrl = new URL('/error', request.url)
+    errorUrl.searchParams.set('reason', 'login_failed')
+    
+    let response = NextResponse.redirect(successUrl)
 
     const supabase = createServerClient(
       process.env.SUPABASE_URL!,
@@ -28,10 +33,10 @@ export async function POST(request: NextRequest) {
             return request.cookies.getAll()
           },
           setAll(cookiesToSet) {
-            // set cookies on the response we'll return so the browser receives them
-            cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set(name, value, options)
-            )
+            // Set cookies on the response
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options)
+            })
           },
         },
       }
@@ -46,25 +51,10 @@ export async function POST(request: NextRequest) {
         code: (error as any).code,
         fullError: error,
       })
-      // redirect to /error without throwing
-      const redirectUrl = new URL('/error', request.url)
-      redirectUrl.searchParams.set('reason', 'login_failed')
-      const response = NextResponse.redirect(redirectUrl)
-      // copy any cookies we set
-      supabaseResponse.cookies.getAll().forEach(({ name, value }) => {
-        response.cookies.set(name, value)
-      })
-      return response
+      return NextResponse.redirect(errorUrl)
     }
 
     console.log('Sign-in successful for:', email)
-    // On success, redirect to /account and include the cookies we set
-    const successUrl = new URL('/account', request.url)
-    const response = NextResponse.redirect(successUrl)
-    // copy any cookies we set
-    supabaseResponse.cookies.getAll().forEach(({ name, value }) => {
-      response.cookies.set(name, value)
-    })
     return response
   } catch (err) {
     console.error('Unexpected login error:', err instanceof Error ? err.message : err)

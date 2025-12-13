@@ -22,7 +22,7 @@ export async function verifyOtpClient(email: string, token: string, type: string
 
 export async function resetPasswordClient(email: string) {
   const supabase = createClient()
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/confirm`
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/confirm?type=recovery`
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
   return { error }
 }

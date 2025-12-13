@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Handle OTP verification with token_hash (legacy/alternative flow)
+  // Handle OTP verification with token_hash (for password reset and other OTP flows)
   if (token_hash && type) {
     const supabase = await createClient()
     
@@ -45,6 +45,14 @@ export async function GET(request: NextRequest) {
       })
       
       if (!error) {
+        // For password recovery, redirect to reset password page
+        if (type === 'recovery' || type === 'email_change') {
+          const resetUrl = request.nextUrl.clone()
+          resetUrl.pathname = '/reset-password'
+          resetUrl.searchParams.delete('token_hash')
+          resetUrl.searchParams.delete('type')
+          return NextResponse.redirect(resetUrl)
+        }
         return NextResponse.redirect(redirectTo)
       }
       
