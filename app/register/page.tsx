@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import {
-  AlertCircle,
   CheckCircle2,
   Smile,
 } from "lucide-react";
@@ -23,6 +22,19 @@ export default function RegisterPage() {
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   const [showProfilePopup, setShowProfilePopup] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+
+  // Check if user came back after email confirmation
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const confirmed = params.get('confirmed');
+    
+    if (confirmed === 'true') {
+      console.log('User returned after email confirmation');
+      setShowProfilePopup(true);
+      // Clean up URL
+      window.history.replaceState({}, '', '/register');
+    }
+  }, []);
 
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
@@ -77,28 +89,75 @@ const handleRegister = async () => {
 
   setLoading(true);
 
-  const { error } = await supabase.auth.signUp({
-    email: email,
-    password: password,
-    options: {
-      emailRedirectTo: `${window.location.origin}/auth/confirm`,
-    },
-  });
+  try {
+    const redirectUrl = process.env.NEXT_PUBLIC_APP_URL 
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`
+      : `${window.location.origin}/auth/confirm`;
 
-  setLoading(false);
+    console.log('=== REGISTRATION DEBUG ===');
+    console.log('Email:', email);
+    console.log('Redirect URL:', redirectUrl);
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
 
-  if (error) {
-    setEmailError(error.message);
-    return;
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          email: email
+        }
+      },
+    });
+
+    console.log('Signup response data:', JSON.stringify(data, null, 2));
+    console.log('Signup error:', error);
+
+    setLoading(false);
+
+    if (error) {
+      console.error('Signup error:', error);
+      setEmailError(error.message);
+      return;
+    }
+
+    // Log what happened
+    if (data?.user && !data.session) {
+      console.log('✅ User created, email confirmation REQUIRED');
+      console.log('User ID:', data.user.id);
+      console.log('Email sent to:', data.user.email);
+      console.log('Confirmation sent at:', data.user.confirmation_sent_at);
+      setShowConfirmationPopup(true);
+    } else if (data?.session) {
+      console.log('⚠️ User created with AUTO-CONFIRM (no email sent)');
+      console.log('Session exists:', !!data.session);
+      alert('Email confirmation is disabled in Supabase. To enable email sending:\n\n1. Go to Supabase Dashboard\n2. Authentication → Providers → Email\n3. Enable "Confirm email"');
+      setShowProfilePopup(true);
+    } else if (data?.user && data.user.identities && data.user.identities.length === 0) {
+      console.log('⚠️ User already exists (may need to login instead)');
+      setEmailError('This email is already registered. Please try logging in instead.');
+    } else {
+      console.log('⚠️ Unexpected signup state:', data);
+      setShowConfirmationPopup(true);
+    }
+  } catch (err) {
+    console.error('Unexpected signup error:', err);
+    setEmailError('An unexpected error occurred. Please try again.');
+    setLoading(false);
   }
-
-  // Show confirmation popup
-  setShowConfirmationPopup(true);
 };
 
 
   // STEP 2 — User clicks confirmation link in email, then returns to continue profile setup
-  const handleContinueAfterConfirmation = () => {
+  const handleContinueAfterConfirmation = async () => {
+    // Verify the user actually has a session (clicked the email link)
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (!session || error) {
+      alert("Please click the confirmation link in your email first. Check your inbox (and spam folder) for an email from Supabase.");
+      return;
+    }
+    
     setShowConfirmationPopup(false);
     setShowProfilePopup(true);
   };
@@ -179,10 +238,10 @@ const handleRegister = async () => {
     <div className="relative min-h-screen w-full bg-[#F5F5F0] overflow-hidden flex items-center justify-center">
 
       {/* TOP CURVED SHAPE */}
-      <div className="absolute top-[-200px] left-0 w-full h-[400px] bg-[#A4B870] rounded-b-full z-0"></div>
+      <div className="absolute top-[-200px] left-0 w-full h-[400px] bg-[#A4B870] rounded-b-full z-0 pointer-events-none"></div>
 
       {/* BOTTOM CURVED SHAPE */}
-      <div className="absolute bottom-[-200px] left-0 w-full h-[400px] bg-[#A4B870] rounded-t-full z-0"></div>
+      <div className="absolute bottom-[-200px] left-0 w-full h-[400px] bg-[#A4B870] rounded-t-full z-0 pointer-events-none"></div>
 
       {/* CENTER CARD */}
       <div className="relative z-10 w-full max-w-md bg-white/80 backdrop-blur-md shadow-lg rounded-3xl p-10 text-center flex flex-col items-center">
@@ -202,7 +261,7 @@ const handleRegister = async () => {
               placeholder="Enter your email..."
               className={`w-full px-5 py-3 rounded-full border ${
                 emailError ? "border-red-400 bg-red-50" : "border-gray-300"
-              } focus:outline-none`}
+              } text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -220,7 +279,7 @@ const handleRegister = async () => {
                 passwordError
                   ? "border-red-400 bg-red-50"
                   : "border-gray-300"
-              } focus:outline-none`}
+              } text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]`}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -238,9 +297,9 @@ const handleRegister = async () => {
           {loading ? "Loading..." : "Register →"}
         </button>
 
-        <p className="text-sm mt-4">
+        <p className="text-sm mt-4 text-gray-600">
           Already have an account?{" "}
-          <a href="/login" className="text-orange-600 font-semibold">Sign In</a>
+          <a href="/login" className="text-orange-600 font-semibold hover:underline">Sign In</a>
         </p>
       </div>
 
@@ -251,16 +310,16 @@ const handleRegister = async () => {
             <CheckCircle2 className="text-green-600 w-10 h-10 mx-auto" />
             <p className="text-xl font-semibold text-[#A4B870]">Confirm Your Email</p>
             <p className="text-gray-600 text-sm">
-              We've sent a confirmation link to <strong>{email}</strong>. Please click the link in your email to activate your account.
+              We&apos;ve sent a confirmation link to <strong>{email}</strong>. Please click the link in your email to activate your account.
             </p>
             <p className="text-gray-500 text-xs">
-              Once you've clicked the link, come back here to complete your profile.
+              Once you&apos;ve clicked the link, come back here to complete your profile.
             </p>
             <button
               onClick={handleContinueAfterConfirmation}
               className="mt-5 bg-[#A4B870] text-white px-10 py-3 rounded-full"
             >
-              I've Confirmed My Email
+              I&apos;ve Confirmed My Email
             </button>
           </div>
         </div>
@@ -274,21 +333,21 @@ const handleRegister = async () => {
 
             <input
               placeholder="Enter your full name..."
-              className="w-full px-5 py-3 rounded-full border border-gray-300"
+              className="w-full px-5 py-3 rounded-full border border-gray-300 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />
 
             <input
               placeholder="Enter your username..."
-              className="w-full px-5 py-3 rounded-full border border-gray-300"
+              className="w-full px-5 py-3 rounded-full border border-gray-300 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
 
             <input
               placeholder="Enter your phone number..."
-              className="w-full px-5 py-3 rounded-full border border-gray-300"
+              className="w-full px-5 py-3 rounded-full border border-gray-300 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
             />

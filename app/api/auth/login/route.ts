@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const errorUrl = new URL('/error', request.url)
     errorUrl.searchParams.set('reason', 'login_failed')
     
-    let response = NextResponse.redirect(successUrl)
+    const response = NextResponse.redirect(successUrl)
 
     const supabase = createServerClient(
       process.env.SUPABASE_URL!,
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       console.error('Sign-in error details:', {
         message: error.message,
         status: error.status,
-        code: (error as any).code,
+        code: error.name,
         fullError: error,
       })
       return NextResponse.redirect(errorUrl)

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Navbar from "@/components/Navbar"
 import { getMoodVisualization, getUserProfile, type MoodData, type MoodStats, type WeeklyMood } from "./actions"
 import { RefreshCw, MoreVertical } from "lucide-react"
 

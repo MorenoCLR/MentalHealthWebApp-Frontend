@@ -1,127 +1,211 @@
 # Mental Health Web App - AI Agent Instructions
 
 ## Project Overview
+Next.js 16 (App Router) + Supabase mental health web app with cookie-based auth, TypeScript, Tailwind CSS 4, and `@supabase/ssr` for server-side rendering.
 
-This is a **Next.js 16 (App Router) + Supabase** mental health web application with cookie-based authentication. The project uses TypeScript, Tailwind CSS 4, and the `@supabase/ssr` package for server-side rendering with Supabase.
+## Critical: Three Supabase Client Patterns
 
-## Architecture & Key Components
+**You MUST use the correct client for each context** - mixing these causes auth failures:
 
-### Supabase Client Contexts
-
-**Critical**: This app uses THREE different Supabase client initialization patterns:
-
-1. **Server Components/Actions** → [`utils/supabase/server.ts`](utils/supabase/server.ts)
-   - Uses `createServerClient` with Next.js `cookies()` API
+1. **Server Components/Actions** → `@/utils/supabase/server`
+   ```ts
+   import { createClient } from '@/utils/supabase/server'
+   const supabase = await createClient()  // Always await!
+   ```
    - Environment vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (no `NEXT_PUBLIC_` prefix)
-   - Always `await createClient()` before use
+   - Used in: Server actions (`actions.ts`), Server Components, API routes
 
-2. **Client Components** → [`utils/supabase/client.ts`](utils/supabase/client.ts)
-   - Uses `createBrowserClient` 
+2. **Client Components** → `@/utils/supabase/client`
+   ```ts
+   import { createClient } from '@/utils/supabase/client'
+   const supabase = createClient()  // No await
+   ```
    - Environment vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-   - Direct call: `createClient()` (no await)
+   - Used in: Client components with `'use client'` directive
 
-3. **Middleware** → [`utils/supabase/middleware.ts`](utils/supabase/middleware.ts)
+3. **Middleware** → `@/utils/supabase/middleware`
    - Special cookie handling for auth token refresh
-   - Called from [`proxy.ts`](proxy.ts) (Next.js middleware entry point)
+   - Called from `proxy.ts` (Next.js middleware entry point)
+   - **Do not modify** unless changing auth flow
 
-### Authentication Patterns
+## Authentication Architecture
 
-- **Dual auth system**: Password-based AND OTP (one-time password) flows coexist
-- **Server Actions** in [`app/login/actions.ts`](app/login/actions.ts) handle: `login()`, `signup()`, `sendOtp()`, `verifyOtp()`
-- **Client-side helpers** in [`app/login/clientAuth.ts`](app/login/clientAuth.ts) mirror server actions for client component use
-- **API Route** at [`app/api/auth/login/route.ts`](app/api/auth/login/route.ts) handles form POST from login page
-- **Auth callback** at [`app/auth/confirm/route.ts`](app/auth/confirm/route.ts) processes email confirmation redirects
+### Dual Auth System
+Coexisting password-based AND OTP flows:
 
-**Important**: Auth redirects use `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/confirm` pattern consistently.
+**Server Actions** ([app/login/actions.ts](app/login/actions.ts)):
+- `login(formData)` - Password auth
+- `signup(formData)` - New user registration
+- `sendOtp(formData)` - Send magic link
+- `verifyOtp(formData)` - Verify OTP token
 
-### Database Schema
+**Client Helpers** ([app/login/clientAuth.ts](app/login/clientAuth.ts)):
+- Mirror server actions for client component use
+- Pattern: `sendOtpClient(email)`, `verifyOtpClient(email, token)`
+- Used in interactive UI where Server Actions aren't suitable
 
-See [`db/migrations/`](db/migrations/) for complete schema:
-- **RLS enabled** on all tables (Row-Level Security)
-- Core tables: `users`, `goal`, `journal`, `articles`, `exercises`, `mood_logs`
-- All tables use `uuid` primary keys with `gen_random_uuid()` default
-- Foreign keys cascade delete from `users` table
-- Trigger-based `updated_at` timestamp maintenance via `set_updated_at()` function
+**API Route** ([app/api/auth/login/route.ts](app/api/auth/login/route.ts)):
+- Handles form POST from login page
+- Returns proper redirects or error responses
 
-## Development Workflows
+**Auth Callback** ([app/auth/confirm/route.ts](app/auth/confirm/route.ts)):
+- Processes email confirmation redirects from Supabase
+- Exchanges tokens for session cookies
 
-### Running Locally
-```bash
-npm run dev        # Start dev server on localhost:3000
-npm run build      # Production build
-npm run start      # Run production build
-npm run lint       # ESLint check
+**Redirect Pattern** (critical for auth flows):
+```ts
+const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/confirm`
 ```
 
-### Environment Variables Required
+## Database Schema & RLS
 
-Create `.env.local`:
+All tables in `db/migrations/` follow these patterns:
+
+**Standard Table Structure**:
+```sql
+CREATE TABLE table_name (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+```
+
+**Required for Every Table**:
+1. Enable RLS: `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`
+2. User-scoped policy: `CREATE POLICY ... USING (user_id = auth.uid())`
+3. Updated trigger: `CREATE TRIGGER ... EXECUTE FUNCTION set_updated_at()`
+
+**Core Tables**: `users`, `goal`, `journal`, `moods`, `physical_health`, `positive_reinforcement_message`, `relaxation_suggestions`, `articles`
+
+## Server Actions Pattern
+
+**Every server action follows this structure** (see [app/goals/actions.ts](app/goals/actions.ts)):
+
+```ts
+'use server'
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
+
+export async function actionName(formData: FormData) {
+  const supabase = await createClient()
+  
+  // Auth check
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) redirect('/login')
+  
+  // Validate input
+  const field = formData.get('field') as string
+  if (!field) return { error: 'Field required' }
+  
+  // Database operation
+  const { error } = await supabase.from('table').insert({ user_id: user.id, field })
+  if (error) return { error: error.message }
+  
+  // Revalidate and redirect
+  revalidatePath('/route', 'layout')  // Updates cached data
+  return { success: true }
+}
+```
+
+**Key Rules**:
+- Always check auth before database operations
+- Return `{ error: string }` for validation failures
+- Call `revalidatePath()` after data changes
+- Use `redirect()` for navigation (not `router.push()`)
+
+## Client Component Patterns
+
+**Interactive pages** use client-side state with server actions:
+
+```tsx
+"use client"
+import { useState } from "react"
+import { actionName } from "./actions"
+
+export default function Page() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  
+  const handleSubmit = async () => {
+    setLoading(true)
+    const formData = new FormData()
+    formData.append('field', value)
+    
+    const result = await actionName(formData)
+    if (result?.error) setError(result.error)
+    setLoading(false)
+  }
+  
+  return (/* JSX with loading/error states */)
+}
+```
+
+See [app/mood/page.tsx](app/mood/page.tsx) for full example with dynamic backgrounds.
+
+## Environment Setup
+
+**Required in `.env.local`**:
 ```env
-# Server-side only (NO NEXT_PUBLIC_ prefix)
+# Server-side (no NEXT_PUBLIC_ prefix)
 SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=eyJhbG...
+SUPABASE_ANON_KEY=eyJ...
 
 # Client-side (NEXT_PUBLIC_ prefix required)
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJhbG...  # Can use anon key during transition
-NEXT_PUBLIC_APP_URL=http://localhost:3000      # Optional, for auth redirects
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJ...  # Use anon key if publishable not available
+NEXT_PUBLIC_APP_URL=http://localhost:3000   # Required for auth redirects
 ```
 
-**Note**: Both `SUPABASE_*` and `NEXT_PUBLIC_SUPABASE_*` vars must be set with same values.
+**Critical**: Both sets must have same URL/key values or auth will fail.
 
-## Code Conventions
+## Styling Conventions
 
-### File Organization
-- **Server Actions**: Use `'use server'` directive, place in `actions.ts` files
-- **Client Components**: Use `'use client'` directive, interactive UI components
-- **API Routes**: Use `route.ts` files in `app/api/` directory structure
-- **Path Aliases**: Use `@/` prefix for imports (maps to project root via tsconfig)
+**Brand Colors**:
+- Primary: `#A4B870` (green)
+- Dark: `#6E8450` (dark green)
+- Background: `#F5F5F0` (off-white)
+- Text: `#93a664` (muted green for labels)
 
-### Component Patterns
-- Login page uses **mode-based UI state**: `"password" | "otp" | "forgot" | "resend"`
-- Form submissions prefer **Server Actions** over API routes where possible
-- Client-side Supabase calls wrapped in dedicated helper functions ([`clientAuth.ts`](app/login/clientAuth.ts))
+**Common Patterns**:
+- Rounded buttons: `rounded-full bg-[#A4B870] px-6 py-3 text-white`
+- Form inputs: `rounded-full border border-gray-200 px-4 py-3 shadow-sm`
+- Cards: `rounded-3xl bg-white/90 p-10 shadow-xl backdrop-blur-md`
 
-### Styling
-- **Tailwind CSS 4** with PostCSS (see [`postcss.config.mjs`](postcss.config.mjs))
-- Custom color palette: `#A4B870` (primary green), `#6E8450` (dark green), `#F5F5F0` (background)
-- Geist Sans + Geist Mono fonts loaded in [`layout.tsx`](app/layout.tsx)
+## Development Commands
 
-### TypeScript Configuration
-- Strict mode enabled
-- Path mapping: `@/*` resolves to workspace root
-- Target: ES2017, JSX runtime: `react-jsx`
+```bash
+npm run dev        # localhost:3000
+npm run build      # Production build (check for errors before deploy)
+npm run start      # Run production build locally
+npm run lint       # ESLint check (flat config format)
+```
 
-## Common Tasks
+## Common Debugging Issues
 
-### Adding a New Protected Page
-1. Create page in `app/[route]/page.tsx`
-2. Import server Supabase client: `import { createClient } from '@/utils/supabase/server'`
-3. Check auth: `const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser()`
-4. Redirect if not authenticated
+1. **"Invalid API key"** → Check env vars have correct prefixes
+2. **RLS policy errors** → User not authenticated OR policy doesn't match `auth.uid()`
+3. **Auth not persisting** → Check `sb-*` cookies in Network tab
+4. **Server action not working** → Verify `'use server'` directive at top of file
+5. **Client component error** → Check for `'use client'` directive
 
-### Creating a New Database Table
-1. Add SQL migration in `db/migrations/NNNN_description.sql`
-2. Include RLS policies: `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`
-3. Add user-scoped policy: `CREATE POLICY ... ON ... USING (user_id = auth.uid())`
-4. Add `updated_at` trigger if needed
+## Adding New Features
 
-### Adding a Server Action
-1. Create in `[route]/actions.ts` with `'use server'` directive
-2. Import server client: `const supabase = await createClient()`
-3. Perform operation, then call `revalidatePath('/', 'layout')` if data changes
-4. Use `redirect()` for navigation (not `router.push()`)
+**New protected page**:
+1. Create `app/[route]/page.tsx` (client component if interactive)
+2. Create `app/[route]/actions.ts` for server actions
+3. Auth check in server action (see pattern above)
+4. Add to navigation if needed
 
-## Debugging Tips
+**New database table**:
+1. Add migration: `db/migrations/000X_description.sql`
+2. Follow RLS pattern (enable RLS + user policy + trigger)
+3. Run migration in Supabase dashboard or CLI
 
-- Server logs appear in terminal, client logs in browser console
-- Auth issues: Check cookie settings in Network tab (should see `sb-*` cookies)
-- RLS errors: Verify user is authenticated AND policies match `auth.uid()`
-- Environment var mismatch causes "Invalid API key" errors
+## Project Quirks
 
-## Known Patterns & Quirks
-
-- **Middleware updates auth session** on every request via [`proxy.ts`](proxy.ts)
-- **ESLint config** uses new flat config format ([`eslint.config.mjs`](eslint.config.mjs))
-- **Migration package** in workspace is for external sharing (ignore for dev)
-- **No middleware.ts in root**: Middleware is at `proxy.ts` due to project structure choice
+- **Middleware is `proxy.ts`** not `middleware.ts` (project-specific choice)
+- **Login page uses mode state** (`"password" | "otp" | "forgot" | "resend"`) for UI switching
+- **Path alias `@/`** maps to project root via `tsconfig.json`
+- **Geist fonts** loaded in root layout with CSS variables

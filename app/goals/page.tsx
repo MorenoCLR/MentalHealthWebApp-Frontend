@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { createGoal, updateGoal, getGoals } from "./actions"
 import { Heart, Plus, Calendar, Target } from "lucide-react"
@@ -33,18 +33,18 @@ export default function GoalsPage() {
   const [errors, setErrors] = useState<{ name?: string; frequency?: string }>({})
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    loadGoals()
-  }, [filter])
-
-  const loadGoals = async () => {
+  const loadGoals = useCallback(async () => {
     setLoading(true)
     const result = await getGoals(filter)
     if (result.data) {
       setGoals(result.data)
     }
     setLoading(false)
-  }
+  }, [filter])
+
+  useEffect(() => {
+    loadGoals()
+  }, [loadGoals])
 
   const handleAddClick = () => {
     setSelectedGoal(null)
@@ -170,7 +170,7 @@ export default function GoalsPage() {
               👋 Hey {username}!
             </h1>
             <p className="text-xl text-white/90 mb-8">
-              "Practice mindfulness daily"
+              &quot;Practice mindfulness daily&quot;
             </p>
 
             <button

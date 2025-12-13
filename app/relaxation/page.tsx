@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Navbar from "@/components/Navbar"
 import { getRelaxationSuggestions, type RelaxationActivity } from "./actions"
 
 export default function RelaxationPage() {

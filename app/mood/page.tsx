@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { saveMood } from "./actions"
+import Navbar from "@/components/Navbar"
 
 // Mood configuration: rating, emoji, label, background color
 const MOODS = [
@@ -18,7 +19,7 @@ export default function MoodLoggingPage() {
   const [selectedMood, setSelectedMood] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [username, setUsername] = useState<string>("Moreno")
+  const [username] = useState<string>("Moreno")
 
   // Calculate background color based on selected mood
   const backgroundColor = selectedMood 
@@ -73,10 +74,13 @@ export default function MoodLoggingPage() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden transition-colors duration-500">
+      {/* Navbar */}
+      <Navbar />
+      
       {/* Back button */}
       <button
         onClick={() => router.back()}
-        className="absolute top-6 left-6 flex items-center gap-2 text-white/90 hover:text-white transition-colors"
+        className="absolute top-6 left-24 md:left-28 flex items-center gap-2 text-white/90 hover:text-white transition-colors z-10"
       >
         <span className="text-2xl">←</span>
         <span className="text-sm font-medium">Daily Mood Logging</span>

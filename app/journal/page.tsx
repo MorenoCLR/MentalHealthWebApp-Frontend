@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Navbar from "@/components/Navbar"
 import { getJournals, createJournal, updateJournal, deleteJournal, type JournalEntry } from "./actions"
 import { PenSquare, Home, Settings, Plus, Trash2 } from "lucide-react"
 

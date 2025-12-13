@@ -25,6 +25,10 @@ export async function GET(request: NextRequest) {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       
       if (!error) {
+        console.log('Email confirmed successfully via code')
+        // For registration, redirect to profile setup
+        redirectTo.pathname = '/register'
+        redirectTo.searchParams.set('confirmed', 'true')
         return NextResponse.redirect(redirectTo)
       }
       
@@ -45,6 +49,7 @@ export async function GET(request: NextRequest) {
       })
       
       if (!error) {
+        console.log('OTP verified successfully')
         // For password recovery, redirect to reset password page
         if (type === 'recovery' || type === 'email_change') {
           const resetUrl = request.nextUrl.clone()
@@ -53,6 +58,14 @@ export async function GET(request: NextRequest) {
           resetUrl.searchParams.delete('type')
           return NextResponse.redirect(resetUrl)
         }
+        
+        // For signup confirmation
+        if (type === 'signup' || type === 'email') {
+          redirectTo.pathname = '/register'
+          redirectTo.searchParams.set('confirmed', 'true')
+          return NextResponse.redirect(redirectTo)
+        }
+        
         return NextResponse.redirect(redirectTo)
       }
       
@@ -64,5 +77,6 @@ export async function GET(request: NextRequest) {
 
   // return the user to an error page with some instructions
   redirectTo.pathname = '/error'
+  redirectTo.searchParams.set('message', 'Email verification failed. Please try signing up again.')
   return NextResponse.redirect(redirectTo)
 }

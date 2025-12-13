@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import React, { useState } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { sendOtpClient, verifyOtpClient, resetPasswordClient, resendConfirmationClient } from "./clientAuth"
 
@@ -12,10 +12,9 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"password" | "otp" | "forgot" | "resend">(
     modeParam === "waiting_for_confirmation" ? "resend" : (modeParam || "password")
   )
-    const router = useRouter()
   const [email, setEmail] = useState<string>("")
-    const [token, setToken] = useState<string>("")
-    const [loading, setLoading] = useState(false)
+  const [token, setToken] = useState<string>("")
+  const [loading, setLoading] = useState(false)
 
   return (
     <div className="relative min-h-screen w-full bg-[#F5F5F0] overflow-hidden">
@@ -30,7 +29,7 @@ export default function LoginPage() {
 
             <div className="mt-6">
               <div className="text-left text-xs text-[#93a664] mb-2">Email Address</div>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email..." className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm" type="email" />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email..." className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]" type="email" />
             </div>
 
             {mode === "password" && (
@@ -38,7 +37,7 @@ export default function LoginPage() {
                 <input type="hidden" name="email" value={email} />
                 <div className="text-left text-xs text-[#93a664] mb-2">Password</div>
                 <div className="relative">
-                  <input name="password" placeholder="Enter your password..." className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm pr-10" type="password" />
+                  <input name="password" placeholder="Enter your password..." className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm pr-10 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]" type="password" />
                 </div>
 
                 <div className="mt-4 text-left text-xs">
@@ -71,7 +70,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="mt-4">
-                  <input value={token} onChange={(e) => setToken(e.target.value)} name="token" placeholder="Enter OTP (if you received a code)" className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm" />
+                  <input value={token} onChange={(e) => setToken(e.target.value)} name="token" placeholder="Enter OTP (if you received a code)" className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]" />
                   <button
                     onClick={async () => {
                       if (!token) return alert('Enter the OTP token')
@@ -138,11 +137,11 @@ export default function LoginPage() {
               </div>
             )}
 
-            <div className="mt-6 text-xs text-gray-500">
-              <button onClick={() => setMode("password")} className="mr-4 text-[#6E8450]">Password</button>
-              <button onClick={() => setMode("otp")} className="mr-4 text-[#6E8450]">OTP</button>
-              <button onClick={() => setMode("resend")} className="mr-4 text-[#6E8450]">Resend</button>
-              <Link href="/register" className="text-orange-500 ml-2">Sign up</Link>
+            <div className="mt-6 text-xs text-gray-700">
+              <button onClick={() => setMode("password")} className="mr-4 text-[#6E8450] hover:underline">Password</button>
+              <button onClick={() => setMode("otp")} className="mr-4 text-[#6E8450] hover:underline">OTP</button>
+              <button onClick={() => setMode("resend")} className="mr-4 text-[#6E8450] hover:underline">Resend</button>
+              <Link href="/register" className="text-orange-600 ml-2 font-semibold hover:underline">Sign up</Link>
             </div>
           </div>
         </div>
