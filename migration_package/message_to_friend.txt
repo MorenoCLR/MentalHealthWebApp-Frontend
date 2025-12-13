@@ -1,0 +1,17 @@
+Hi — I need your help running two quick changes in our Supabase project so sign-up/login (email confirm, OTP, reset) work reliably.
+
+Please run these two SQL scripts in Supabase → SQL Editor (paste + Run each script in order). The files are in the repo at:
+- db/migrations/0001_create_users_and_trigger.sql
+- db/migrations/0002_enable_rls_and_policies.sql
+
+After running them, please update Auth settings:
+- Site URL: set to our app URL (e.g., https://our-app.example.com)
+- Add Redirect URL: https://our-app.example.com/auth/confirm
+- Configure SMTP / Email provider so confirmation/reset emails are delivered
+
+Verification steps:
+1. Confirm `public.users` exists in Database -> Table Editor
+2. Sign up via the app and click the confirmation link from email
+3. Return to app and try login (password/OTP/reset)
+
+If anything fails, send me the error or the confirmation/reset link (you can redact tokens). Thanks — much appreciated!

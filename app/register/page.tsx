@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import React, { useState, useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
 import {
   AlertCircle,
   CheckCircle2,
@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 export default function RegisterPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   // UI states
   const [email, setEmail] = useState("");
@@ -17,13 +17,13 @@ export default function RegisterPage() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   // Step logic
-  const [showOtpPopup, setShowOtpPopup] = useState(false);
+  const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   const [showProfilePopup, setShowProfilePopup] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
-  const [otpCode, setOtpCode] = useState("");
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -60,92 +60,129 @@ function validatePassword(pw: string) {
 }
 
 const handleRegister = async () => {
-  // Reset errors
   setEmailError("");
   setPasswordError("");
 
-  // Run validators
   const emailValidation = validateEmail(email);
   const passwordValidation = validatePassword(password);
 
-  let hasError = false;
-
   if (emailValidation) {
     setEmailError(emailValidation);
-    hasError = true;
+    return;
   }
-
   if (passwordValidation) {
     setPasswordError(passwordValidation);
-    hasError = true;
+    return;
   }
-
-  if (hasError) return;
 
   setLoading(true);
 
   const { error } = await supabase.auth.signUp({
     email: email,
     password: password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/auth/confirm`,
+    },
   });
 
   setLoading(false);
 
-  if (error?.message.includes("already registered")) {
-    setEmailError("Email is already registered. Try another.");
+  if (error) {
+    setEmailError(error.message);
     return;
   }
 
-  // Move to OTP popup
-  setShowOtpPopup(true);
+  // Show confirmation popup
+  setShowConfirmationPopup(true);
 };
 
 
-  // STEP 2 — VERIFY OTP
-  const handleOtpVerify = async () => {
-    const { data, error } = await supabase.auth.verifyOtp({
-      email,
-      token: otpCode,
-      type: "signup",
-    });
-
-    if (error) {
-      alert("Invalid OTP. Try again.");
-      return;
-    }
-
-    setShowOtpPopup(false);
+  // STEP 2 — User clicks confirmation link in email, then returns to continue profile setup
+  const handleContinueAfterConfirmation = () => {
+    setShowConfirmationPopup(false);
     setShowProfilePopup(true);
   };
 
   // STEP 3 — SAVE PROFILE DATA
   const handleSaveProfile = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    const uid = userData.user?.id;
+    setProfileLoading(true);
+    
+    try {
+      // Retry logic: try up to 3 times to get the user with a delay
+      let user = null;
+      let userError = null;
+      
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data: { user: currentUser }, error: err } = await supabase.auth.getUser();
+        
+        if (currentUser?.id) {
+          user = currentUser;
+          break;
+        }
+        
+        userError = err;
+        
+        // Wait 1 second before retrying (except on last attempt)
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
+      if (userError || !user?.id) {
+        console.error("Auth error after retries:", userError);
+        alert("Error: Your email confirmation may not be complete. Please refresh the page and try clicking the confirmation link again.");
+        setProfileLoading(false);
+        return;
+      }
 
-    if (!uid) return;
+      const uid = user.id;
 
-    await supabase
-      .from("users")
-      .update({
-        full_name: fullName,
-        username: username,
-        phone_number: phoneNumber,
-      })
-      .eq("id", uid);
+      // Try to insert or update the user profile
+      const { error } = await supabase
+        .from("users")
+        .upsert(
+          {
+            id: uid,
+            full_name: fullName,
+            username: username,
+            phone_number: phoneNumber,
+          },
+          { onConflict: "id" }
+        );
 
-    setShowProfilePopup(false);
-    setShowSuccessPopup(true);
+      if (error) {
+        console.error("Error saving profile:", error);
+        // If the users table doesn't exist, still proceed to success
+        if (error.code === "PGRST116" || error.code === "42P01") {
+          console.warn("Users table does not exist yet. Profile data not saved, but continuing registration.");
+          setProfileLoading(false);
+          setShowProfilePopup(false);
+          setShowSuccessPopup(true);
+          return;
+        }
+        alert(`Error saving profile: ${error.message}`);
+        setProfileLoading(false);
+        return;
+      }
+
+      setProfileLoading(false);
+      setShowProfilePopup(false);
+      setShowSuccessPopup(true);
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      alert("An unexpected error occurred. Please try again.");
+      setProfileLoading(false);
+    }
   };
 
   return (
     <div className="relative min-h-screen w-full bg-[#F5F5F0] overflow-hidden flex items-center justify-center">
 
       {/* TOP CURVED SHAPE */}
-      <div className="absolute top-[-200px] left-0 w-full h-[400px] bg-[#A4B870] rounded-b-full"></div>
+      <div className="absolute top-[-200px] left-0 w-full h-[400px] bg-[#A4B870] rounded-b-full z-0"></div>
 
       {/* BOTTOM CURVED SHAPE */}
-      <div className="absolute bottom-[-200px] left-0 w-full h-[400px] bg-[#A4B870] rounded-t-full"></div>
+      <div className="absolute bottom-[-200px] left-0 w-full h-[400px] bg-[#A4B870] rounded-t-full z-0"></div>
 
       {/* CENTER CARD */}
       <div className="relative z-10 w-full max-w-md bg-white/80 backdrop-blur-md shadow-lg rounded-3xl p-10 text-center flex flex-col items-center">
@@ -207,23 +244,23 @@ const handleRegister = async () => {
         </p>
       </div>
 
-      {/* OTP POPUP */}
-      {showOtpPopup && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 w-[350px] text-center">
-            <p className="text-xl font-semibold text-[#A4B870]">Enter OTP</p>
-
-            <input
-              className="mt-5 w-full px-5 py-3 rounded-full border border-gray-300"
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value)}
-            />
-
+      {/* EMAIL CONFIRMATION POPUP */}
+      {showConfirmationPopup && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 w-[350px] text-center space-y-4">
+            <CheckCircle2 className="text-green-600 w-10 h-10 mx-auto" />
+            <p className="text-xl font-semibold text-[#A4B870]">Confirm Your Email</p>
+            <p className="text-gray-600 text-sm">
+              We've sent a confirmation link to <strong>{email}</strong>. Please click the link in your email to activate your account.
+            </p>
+            <p className="text-gray-500 text-xs">
+              Once you've clicked the link, come back here to complete your profile.
+            </p>
             <button
-              onClick={handleOtpVerify}
+              onClick={handleContinueAfterConfirmation}
               className="mt-5 bg-[#A4B870] text-white px-10 py-3 rounded-full"
             >
-              Confirm
+              I've Confirmed My Email
             </button>
           </div>
         </div>
@@ -231,9 +268,8 @@ const handleRegister = async () => {
 
       {/* PROFILE POPUP */}
       {showProfilePopup && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-8 w-[350px] text-center space-y-4">
-
             <p className="text-xl font-semibold text-[#A4B870]">Personal Details</p>
 
             <input
@@ -259,9 +295,10 @@ const handleRegister = async () => {
 
             <button
               onClick={handleSaveProfile}
-              className="mt-4 bg-[#A4B870] text-white px-10 py-3 rounded-full"
+              disabled={profileLoading}
+              className="mt-4 bg-[#A4B870] text-white px-10 py-3 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save
+              {profileLoading ? "Saving..." : "Save"}
             </button>
 
           </div>
@@ -270,7 +307,7 @@ const handleRegister = async () => {
 
       {/* SUCCESS POPUP */}
       {showSuccessPopup && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-8 w-[350px] text-center space-y-4">
             <CheckCircle2 className="text-green-600 w-10 h-10 mx-auto" />
             <p className="text-lg font-semibold">Registration Successful!</p>
