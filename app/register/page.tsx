@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -140,6 +141,13 @@ const handleRegister = async () => {
       return;
     }
 
+    // Check for existing user (when enumeration protection is ON, Supabase returns a fake user with empty identities)                                                                        │
+    if (data?.user && data?.user?.identities && data?.user?.identities?.length === 0) {         
+      console.log('⚠️ User already exists (may need to login instead)');                        
+      setEmailError('This email is already registered. Please try logging in instead.');        
+      return;                                                                                   
+    }     
+    
     // Log what happened
     if (data?.user && !data.session) {
       console.log('✅ User created, email confirmation REQUIRED');
@@ -168,18 +176,7 @@ const handleRegister = async () => {
 
 
   // STEP 2 — User clicks confirmation link in email, then returns to continue profile setup
-  const handleContinueAfterConfirmation = async () => {
-    // Verify the user actually has a session (clicked the email link)
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    if (!session || error) {
-      alert("Please click the confirmation link in your email first. Check your inbox (and spam folder) for an email from Supabase.");
-      return;
-    }
-    
-    setShowConfirmationPopup(false);
-    setShowProfilePopup(true);
-  };
+  // The user will be redirected to /register?confirmed=true by the email link (handled in useEffect)
 
   // STEP 3 — SAVE PROFILE DATA
   const handleSaveProfile = async () => {
@@ -330,18 +327,29 @@ const handleRegister = async () => {
           </div>
 
           {/* Confirm Password */}
-          <div>
+          <div className="relative">
             <input
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               placeholder="Confirm your password..."
               className={`w-full px-5 py-3 rounded-full border ${
                 confirmPasswordError
                   ? "border-red-400 bg-red-50"
                   : "border-gray-300"
-              } text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]`}
+              } text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870] pr-12`}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
             {confirmPasswordError && (
               <p className="text-red-500 text-sm mt-1">{confirmPasswordError}</p>
             )}
@@ -372,14 +380,8 @@ const handleRegister = async () => {
               We&apos;ve sent a confirmation link to <strong>{email}</strong>. Please click the link in your email to activate your account.
             </p>
             <p className="text-gray-500 text-xs">
-              Once you&apos;ve clicked the link, come back here to complete your profile.
+              Once you&apos;ve clicked the link, you will be able to continue setting up your profile.
             </p>
-            <button
-              onClick={handleContinueAfterConfirmation}
-              className="mt-5 bg-[#A4B870] text-white px-10 py-3 rounded-full"
-            >
-              I&apos;ve Confirmed My Email
-            </button>
           </div>
         </div>
       )}
