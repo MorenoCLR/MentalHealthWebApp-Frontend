@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create response object
-    const successUrl = new URL('/account', request.url)
+    const successUrl = new URL('/dashboard', request.url)
     const errorUrl = new URL('/error', request.url)
     errorUrl.searchParams.set('reason', 'login_failed')
     

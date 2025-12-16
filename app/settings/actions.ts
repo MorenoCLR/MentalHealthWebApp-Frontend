@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 
 export async function getUserProfile() {
@@ -183,7 +184,16 @@ export async function exportUserData() {
 
 export async function logout() {
   const supabase = await createClient()
-  await supabase.auth.signOut()
+  await supabase.auth.signOut({ scope: 'global' })
+
+  // Explicitly clear Supabase auth cookies to prevent back-nav session restore
+  const cookieStore = await cookies()
+  cookieStore.getAll().forEach((cookie) => {
+    if (cookie.name.startsWith('sb-')) {
+      cookieStore.set(cookie.name, '', { path: '/', maxAge: 0 })
+    }
+  })
+
   redirect('/login')
 }
 

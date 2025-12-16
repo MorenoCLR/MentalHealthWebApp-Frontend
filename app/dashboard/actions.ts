@@ -7,6 +7,8 @@ type DashboardData = {
   user: {
     id: string
     email?: string
+    username?: string
+    full_name?: string
     [key: string]: unknown
   }
   latestMood: {
@@ -31,6 +33,9 @@ type DashboardData = {
     updated_at: string | null
     complaints: string | null
     health_id: string | null
+    weight?: number | null
+    sleepHours?: number | null
+    stepCounts?: number | null
   } | null
   articles: Array<{
     id: string
@@ -39,6 +44,17 @@ type DashboardData = {
   suggestions: Array<{
     id: string
     [key: string]: unknown
+  }>
+  journals: Array<{
+    id: string
+    title: string
+    date_created: string
+  }>
+  goals: Array<{
+    id: string
+    name: string
+    target: string
+    progress: string
   }>
   stressLevel: number
   goalsCount: number
@@ -52,6 +68,13 @@ export async function getDashboardData(): Promise<DashboardData> {
   if (authError || !user) {
     redirect('/login')
   }
+
+  // Get user profile data
+  const { data: userProfile } = await supabase
+    .from('users')
+    .select('username, full_name')
+    .eq('id', user.id)
+    .single()
 
   // Get latest mood (today)
   const { data: latestMood } = await supabase
@@ -97,6 +120,31 @@ export async function getDashboardData(): Promise<DashboardData> {
     .order('created_at', { ascending: false })
     .limit(2)
 
+  // Get recent journal entries (top 3)
+  const { data: journals } = await supabase
+    .from('journal')
+    .select('id, title, date_created')
+    .eq('user_id', user.id)
+    .order('date_created', { ascending: false })
+    .limit(3)
+
+  // Get today's goals (due today + indefinite)
+  const today = new Date().toISOString().slice(0,10)
+  const { data: allGoals } = await supabase
+    .from('goal')
+    .select('id, name, target, progress')
+    .eq('user_id', user.id)
+    .neq('progress', 'Completed')
+    .order('updated_at', { ascending: false })
+
+  // Filter for today's goals (due today or indefinite)
+  const todayGoals = (allGoals || []).filter(g => {
+    const t = g.target
+    if (t === 'Indefinite') return true
+    if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t === today
+    return t.toLowerCase().includes('daily')
+  })
+
   // Calculate stress level (based on mood ratings)
   const stressLevel = weeklyMoods && weeklyMoods.length > 0
     ? Math.round((1 - (weeklyMoods.reduce((sum, m) => sum + m.mood_rating, 0) / (weeklyMoods.length * 5))) * 100)
@@ -108,16 +156,33 @@ export async function getDashboardData(): Promise<DashboardData> {
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
 
+  // Extract weight and other stats from complaints JSON if available
+  let weight: number | null = null
+  let sleepHoursVal: number | null = null
+  let stepCountsVal: number | null = null
+  if (physicalHealth?.complaints) {
+    try {
+      const parsed = JSON.parse(physicalHealth.complaints)
+      weight = typeof parsed?.weight === 'number' ? parsed.weight : null
+      sleepHoursVal = typeof parsed?.sleepHours === 'number' ? parsed.sleepHours : null
+      stepCountsVal = typeof parsed?.stepCounts === 'number' ? parsed.stepCounts : null
+    } catch {}
+  }
+
   return {
     user: {
       id: user.id,
       email: user.email,
+      username: userProfile?.username,
+      full_name: userProfile?.full_name,
     },
     latestMood,
     weeklyMoods: weeklyMoods || [],
-    physicalHealth,
+    physicalHealth: physicalHealth ? { ...physicalHealth, weight, sleepHours: sleepHoursVal, stepCounts: stepCountsVal } : null,
     articles: articles || [],
     suggestions: suggestions || [],
+    journals: journals || [],
+    goals: todayGoals || [],
     stressLevel,
     goalsCount: goalsCount || 0
   }

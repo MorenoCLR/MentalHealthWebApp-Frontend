@@ -15,6 +15,8 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
 
@@ -74,6 +76,7 @@ function validatePassword(pw: string) {
 const handleRegister = async () => {
   setEmailError("");
   setPasswordError("");
+  setConfirmPasswordError("");
 
   const emailValidation = validateEmail(email);
   const passwordValidation = validatePassword(password);
@@ -84,6 +87,12 @@ const handleRegister = async () => {
   }
   if (passwordValidation) {
     setPasswordError(passwordValidation);
+    return;
+  }
+
+  // Confirm password must match
+  if (password !== confirmPassword) {
+    setConfirmPasswordError("Passwords do not match.");
     return;
   }
 
@@ -117,7 +126,14 @@ const handleRegister = async () => {
 
     if (error) {
       console.error('Signup error:', error);
-      setEmailError(error.message);
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('already') && msg.includes('registered')) {
+        setEmailError('This email is already registered. Please try logging in instead.');
+      } else if (msg.includes('exists')) {
+        setEmailError('This email already exists. Please log in.');
+      } else {
+        setEmailError(error.message);
+      }
       return;
     }
 
@@ -268,6 +284,17 @@ const handleRegister = async () => {
             {emailError && (
               <p className="text-red-500 text-sm mt-1">{emailError}</p>
             )}
+            {emailError && (
+              <div className="mt-2 text-left">
+                <button
+                  type="button"
+                  onClick={() => (window.location.href = "/login")}
+                  className="text-sm text-[#6E8450] hover:underline"
+                >
+                  Go to Login
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Password */}
@@ -285,6 +312,24 @@ const handleRegister = async () => {
             />
             {passwordError && (
               <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+            )}
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <input
+              type="password"
+              placeholder="Confirm your password..."
+              className={`w-full px-5 py-3 rounded-full border ${
+                confirmPasswordError
+                  ? "border-red-400 bg-red-50"
+                  : "border-gray-300"
+              } text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]`}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+            {confirmPasswordError && (
+              <p className="text-red-500 text-sm mt-1">{confirmPasswordError}</p>
             )}
           </div>
         </div>

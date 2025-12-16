@@ -54,6 +54,7 @@ export async function updateGoal(formData: FormData) {
   const goalId = formData.get('id') as string
   const name = formData.get('name') as string
   const target = formData.get('target') as string
+  const progress = formData.get('progress') as string | null
 
   if (!goalId) {
     return { error: 'Goal ID is required' }
@@ -67,13 +68,19 @@ export async function updateGoal(formData: FormData) {
     return { error: 'Frequency is required' }
   }
 
+  const updateData: any = {
+    name: name.trim(),
+    target: target.trim(),
+    updated_at: new Date().toISOString(),
+  }
+
+  if (progress) {
+    updateData.progress = progress
+  }
+
   const { error } = await supabase
     .from('goal')
-    .update({
-      name: name.trim(),
-      target: target.trim(),
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq('id', goalId)
     .eq('user_id', user.id)
 

@@ -1,9 +1,15 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { savePhysicalHealth } from "./actions"
+import { savePhysicalHealth, getLast7DaysPhysicalHealth } from "./actions"
 import { Plus, Check } from "lucide-react"
+
+type HealthEntry = {
+  id: string
+  complaints: string
+  created_at: string
+}
 
 export default function PhysicalHealthPage() {
   const router = useRouter()
@@ -11,7 +17,63 @@ export default function PhysicalHealthPage() {
   const [showSuccess, setShowSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [username] = useState("Moreno")
+  const [username, setUsername] = useState<string | null>(null)
+  const [healthLogs, setHealthLogs] = useState<HealthEntry[]>([])
+  const [loggedToday, setLoggedToday] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Fetch username
+        const userRes = await fetch('/api/user-profile', { cache: 'no-store' })
+        if (userRes.ok) {
+          const userData = await userRes.json()
+          setUsername(userData.username || userData.full_name || 'there')
+        }
+
+        // Check if user logged physical health today
+        const healthRes = await fetch('/api/physical-health-today', { cache: 'no-store' })
+        if (healthRes.ok) {
+          const healthData = await healthRes.json()
+          setLoggedToday(healthData.loggedToday)
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err)
+      }
+    }
+    
+    fetchData()
+    loadHealthLogs()
+
+    // Refetch logs when document becomes visible (user returns to page)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData()
+        loadHealthLogs()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    // Also refetch when window regains focus
+    const handleFocus = () => {
+      fetchData()
+      loadHealthLogs()
+    }
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [])
+
+  const loadHealthLogs = async () => {
+    const result = await getLast7DaysPhysicalHealth()
+    if (result.data) {
+      setHealthLogs(result.data as HealthEntry[])
+    }
+  }
 
   // Form states
   const [weight, setWeight] = useState("")
@@ -44,16 +106,21 @@ export default function PhysicalHealthPage() {
       if (result?.error) {
         setError(result.error)
       } else {
+        setLoggedToday(true)
         setShowSuccess(true)
         // Clear form
         setWeight("")
         setSleepHours("")
         setStepCounts("")
         
-        // Auto-hide success after 3 seconds
+        // Reload health logs
+        await loadHealthLogs()
+        
+        // Auto-hide success and show history after 3 seconds
         setTimeout(() => {
           setShowSuccess(false)
           setShowForm(false)
+          setShowHistory(true)
         }, 3000)
       }
     } catch (err) {
@@ -85,35 +152,23 @@ export default function PhysicalHealthPage() {
       </button>
 
       {/* Main content */}
-      <main className="flex min-h-screen w-full items-center justify-center px-8">
-        <div className="w-full max-w-md text-center relative">
-          {!showForm ? (
-            <>
-              {/* Empty state */}
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-white mb-2">
-                  👋 Hey {username}!
-                </h1>
-              </div>
+      <main className="flex min-h-screen w-full flex-col items-center justify-center px-8 py-8">
+        {!showHistory ? (
+          // Physical Health Logging Section
+          <div className="w-full max-w-md text-center">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-white mb-2">
+                👋 Hey {username}!
+              </h1>
+            </div>
 
-              <h2 className="text-2xl font-semibold text-white mb-12">
-                Log Entry
-              </h2>
+            <h2 className="text-2xl font-semibold text-white mb-12">
+              Physical Health Log
+            </h2>
 
-              <button
-                onClick={handleAddClick}
-                className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105 transition-all mx-auto"
-              >
-                <Plus className="w-8 h-8 text-[#A67C52]" strokeWidth={3} />
-              </button>
-            </>
-          ) : (
-            <>
-              {/* Form */}
-              <h2 className="text-2xl font-semibold text-white mb-8">
-                Log Entry
-              </h2>
-
+            {/* Form container */}
+            <div className={`${loggedToday && !showForm ? 'blur-sm pointer-events-none opacity-50' : ''}`}>
               <div className="bg-white/95 rounded-3xl p-8 shadow-2xl backdrop-blur-sm mb-6 relative">
                 {/* Success overlay */}
                 {showSuccess && (
@@ -139,7 +194,7 @@ export default function PhysicalHealthPage() {
 
                 {/* Weight Input */}
                 <div className="mb-6 text-left">
-                  <label className="block text-sm text-[#A67C52] font-medium mb-2">
+                  <label className="block text-sm text-gray-700 font-medium mb-2">
                     Weight(kg)
                   </label>
                   <input
@@ -147,15 +202,15 @@ export default function PhysicalHealthPage() {
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     placeholder="Enter your Weight..."
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#A67C52]/50"
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A67C52]/50"
                     step="0.1"
-                    disabled={loading || showSuccess}
+                    disabled={loading || showSuccess || loggedToday}
                   />
                 </div>
 
                 {/* Sleep Hours Input */}
                 <div className="mb-6 text-left">
-                  <label className="block text-sm text-[#A67C52] font-medium mb-2">
+                  <label className="block text-sm text-gray-700 font-medium mb-2">
                     Sleep Hour(hours)
                   </label>
                   <input
@@ -163,15 +218,15 @@ export default function PhysicalHealthPage() {
                     value={sleepHours}
                     onChange={(e) => setSleepHours(e.target.value)}
                     placeholder="Enter your Sleep Hours..."
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#A67C52]/50"
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A67C52]/50"
                     step="0.5"
-                    disabled={loading || showSuccess}
+                    disabled={loading || showSuccess || loggedToday}
                   />
                 </div>
 
                 {/* Step Counts Input */}
                 <div className="text-left">
-                  <label className="block text-sm text-[#A67C52] font-medium mb-2">
+                  <label className="block text-sm text-gray-700 font-medium mb-2">
                     Step Counts(steps)
                   </label>
                   <input
@@ -179,8 +234,8 @@ export default function PhysicalHealthPage() {
                     value={stepCounts}
                     onChange={(e) => setStepCounts(e.target.value)}
                     placeholder="Enter your Step Counts..."
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#A67C52]/50"
-                    disabled={loading || showSuccess}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A67C52]/50"
+                    disabled={loading || showSuccess || loggedToday}
                   />
                 </div>
               </div>
@@ -188,22 +243,91 @@ export default function PhysicalHealthPage() {
               {/* Submit button */}
               <button
                 onClick={handleSubmit}
-                disabled={loading || showSuccess}
+                disabled={loading || showSuccess || loggedToday}
                 className={`
                   w-full py-3 px-6 rounded-full font-medium text-gray-800
                   transition-all duration-300 shadow-lg
-                  ${loading || showSuccess
+                  ${loading || showSuccess || loggedToday
                     ? 'bg-gray-300 cursor-not-allowed'
                     : 'bg-white hover:bg-gray-100 hover:shadow-xl active:scale-95'
                   }
                 `}
               >
-                {loading ? 'Saving...' : 'Submit'}
+                {loading ? 'Saving...' : loggedToday ? 'You have logged today' : 'Submit'}
               </button>
-            </>
-          )}
-        </div>
-      </main>
-    </div>
+            </div>
+
+            {/* Show history button when logged today */}
+            {loggedToday && (
+              <button
+                onClick={() => setShowHistory(true)}
+                className="mt-6 px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-full font-medium transition-colors"
+              >
+                See The Latest Week History
+              </button>
+            )}
+          </div>
+        ) : (
+          // History Section
+          <div className="w-full max-w-2xl">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-white mb-2">
+                👋 Hey {username}!
+              </h1>
+            </div>
+
+            <h2 className="text-2xl font-semibold text-white mb-8">
+              Health Logs (Last 7 Days)
+            </h2>
+
+            {/* Health logs list */}
+            {healthLogs.length > 0 ? (
+              <div className="space-y-4 mb-8">
+                {healthLogs.map((log) => {
+                  let logData: any = {}
+                  try {
+                    logData = JSON.parse(log.complaints)
+                  } catch (e) {}
+                  
+                  return (
+                    <div key={log.id} className="bg-white/95 rounded-3xl p-6 shadow-lg">
+                      <p className="text-sm text-gray-500 mb-2">
+                        {new Date(log.created_at).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
+                      </p>
+                      <div className="space-y-2">
+                        {logData.weight && (
+                          <p className="text-gray-800"><span className="font-medium">Weight:</span> {logData.weight} kg</p>
+                        )}
+                        {logData.sleepHours && (
+                          <p className="text-gray-800"><span className="font-medium">Sleep:</span> {logData.sleepHours} hours</p>
+                        )}
+                        {logData.stepCounts && (
+                          <p className="text-gray-800"><span className="font-medium">Steps:</span> {logData.stepCounts}</p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center mb-8">
+                <p className="text-white/80 text-lg">No health logs yet</p>
+              </div>
+            )}
+
+            {/* Back to logging button */}
+            <button
+              onClick={() => setShowHistory(false)}
+              className="w-full py-3 px-6 rounded-full font-medium text-gray-800 bg-white hover:bg-gray-100 hover:shadow-xl active:scale-95 transition-all duration-300 shadow-lg"
+            >
+              Back to Logging
+            </button>
+          </div>
+        )}
+      </main>    </div>
   )
 }

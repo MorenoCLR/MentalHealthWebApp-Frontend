@@ -52,11 +52,11 @@ export default function ResetPasswordPage() {
       <main className="relative flex min-h-screen w-full items-center justify-center">
         <div className="z-10 w-full max-w-md px-8">
           <div className="mx-auto rounded-3xl bg-white/90 p-10 shadow-xl backdrop-blur-md">
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#A4B870]">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#A67C52]">
               <span className="text-3xl">🔒</span>
             </div>
 
-            <h1 className="text-2xl font-bold text-[#6E8450] text-center mb-2">
+            <h1 className="text-2xl font-bold text-[#8B6F47] text-center mb-2">
               Reset Password
             </h1>
             <p className="text-sm text-gray-600 text-center mb-6">
@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
               )}
 
               <div className="mb-4">
-                <div className="text-left text-xs text-[#93a664] mb-2">
+                <div className="text-left text-xs text-[#8B6F47] font-medium mb-2">
                   New Password
                 </div>
                 <input
@@ -79,14 +79,14 @@ export default function ResetPasswordPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter new password..."
-                  className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm"
+                  className="w-full rounded-full border border-gray-300 px-4 py-3 shadow-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A67C52]"
                   required
                   minLength={6}
                 />
               </div>
 
               <div className="mb-6">
-                <div className="text-left text-xs text-[#93a664] mb-2">
+                <div className="text-left text-xs text-[#8B6F47] font-medium mb-2">
                   Confirm Password
                 </div>
                 <input
@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm new password..."
-                  className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm"
+                  className="w-full rounded-full border border-gray-300 px-4 py-3 shadow-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A67C52]"
                   required
                   minLength={6}
                 />
@@ -103,7 +103,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-full bg-[#A4B870] px-6 py-3 text-white hover:bg-[#8FA05E] transition-colors disabled:opacity-50"
+                className="w-full rounded-full bg-[#A67C52] px-6 py-3 text-white hover:bg-[#8B6F47] transition-colors disabled:opacity-50"
               >
                 {loading ? "Updating..." : "Update Password"}
               </button>
@@ -112,7 +112,7 @@ export default function ResetPasswordPage() {
                 <button
                   type="button"
                   onClick={() => router.push("/login")}
-                  className="text-sm text-gray-500 hover:underline"
+                  className="text-sm text-[#8B6F47] hover:underline"
                 >
                   Back to Login
                 </button>

@@ -155,7 +155,7 @@ export default function JournalPage() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">Journal {getJournalNumber(index)}</div>
+                    <div className="font-medium truncate">{journal.title}</div>
                     <div className="text-xs text-white/70 mt-1">
                       {formatDate(journal.date_created)}
                     </div>
@@ -172,7 +172,7 @@ export default function JournalPage() {
         {/* Bottom Navigation */}
         <div className="space-y-2">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/dashboard')}
             className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors w-full"
           >
             <Home className="w-5 h-5" />
@@ -278,7 +278,7 @@ export default function JournalPage() {
                   if (errors.title) setErrors({ ...errors, title: undefined })
                 }}
                 placeholder="I am feeling sick today"
-                className={`w-full px-4 py-3 rounded-full border ${
+                className={`w-full px-4 py-3 rounded-full border text-gray-800 placeholder:text-gray-400 ${
                   errors.title ? 'border-red-400' : 'border-gray-200'
                 } focus:outline-none focus:ring-2 focus:ring-[#A4B870]/50`}
               />
@@ -297,7 +297,7 @@ export default function JournalPage() {
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your thoughts..."
                 rows={6}
-                className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#A4B870]/50 resize-none"
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]/50 resize-none"
               />
             </div>
 

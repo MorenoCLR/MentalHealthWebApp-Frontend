@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
+import { logout } from "@/app/settings/actions"
 import { 
   Home, BookOpen, Smile, Target, FileText, Leaf, 
   Activity, BarChart3, Settings, Menu, X, LogOut,
@@ -37,9 +38,9 @@ export default function Navbar({ className = "" }: NavbarProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
 
   const handleLogout = async () => {
-    if (confirm("Are you sure you want to log out?")) {
-      router.push("/login")
-    }
+    if (!confirm("Are you sure you want to log out?")) return
+    await logout()
+    router.replace("/login")
   }
 
   return (

@@ -10,6 +10,7 @@ type Article = {
   id: string
   title: string
   content: string
+  url?: string
   date_published: string
   created_at: string
   updated_at: string
@@ -24,6 +25,15 @@ const SUGGESTED_TOPICS = [
 ]
 
 const FILTER_TAGS = ["HEALTH", "MEDITATION", "STRESS", "ANXIETY", "IMPROVE HELP"]
+
+// Keyword mapping so category filters actually match article text
+const FILTER_KEYWORDS: Record<string, string[]> = {
+  HEALTH: ["health", "wellbeing", "mental health", "wellness"],
+  MEDITATION: ["meditation", "mindfulness", "breathing"],
+  STRESS: ["stress", "burnout", "overwhelm"],
+  ANXIETY: ["anxiety", "worry", "panic"],
+  "IMPROVE HELP": ["support", "help", "therapy", "treatment", "improve"],
+}
 
 export default function ArticlesPage() {
   const router = useRouter()
@@ -75,6 +85,17 @@ export default function ArticlesPage() {
       handleSearch()
     }
   }
+
+  // Filter articles based on active filter
+  const filteredArticles = useMemo(() => {
+    if (!activeFilter) return articles
+
+    const keywords = FILTER_KEYWORDS[activeFilter] ?? [activeFilter]
+    return articles.filter((article) => {
+      const text = `${article.title} ${article.content}`.toLowerCase()
+      return keywords.some((kw) => text.includes(kw.toLowerCase()))
+    })
+  }, [articles, activeFilter])
 
   const decorativeCircles = useMemo(() => 
     [...Array(15)].map((_, i) => ({
@@ -177,7 +198,7 @@ export default function ArticlesPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Searching 190 articles"
-              className="w-full rounded-full border-none bg-white px-6 py-4 pr-12 shadow-lg focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="w-full rounded-full border-none bg-white text-gray-800 placeholder:text-gray-400 px-6 py-4 pr-12 shadow-lg focus:outline-none focus:ring-2 focus:ring-white/50"
             />
             <button
               onClick={handleSearch}
@@ -209,7 +230,7 @@ export default function ArticlesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Articles list */}
           <div className="lg:col-span-2 space-y-4">
-            {articles.map((article) => (
+            {filteredArticles.map((article) => (
               <div
                 key={article.id}
                 onClick={() => router.push(`/articles/${article.id}`)}
@@ -247,12 +268,22 @@ export default function ArticlesPage() {
             <div className="rounded-3xl bg-white/90 p-6 shadow-lg backdrop-blur-md">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-800">Suggested Topics</h2>
-                <button className="text-sm text-[#6E8450] hover:underline">See all</button>
+                <button
+                  onClick={() => {
+                    setActiveFilter(null)
+                    setSearchQuery("")
+                    loadArticles()
+                  }}
+                  className="text-sm text-[#6E8450] hover:underline"
+                >
+                  See all
+                </button>
               </div>
               <div className="flex flex-wrap gap-3">
                 {SUGGESTED_TOPICS.map((topic) => (
                   <button
                     key={topic.label}
+                    onClick={() => setActiveFilter(topic.label.toUpperCase())}
                     className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-transform hover:scale-105"
                     style={{ backgroundColor: topic.color + '20', color: topic.color }}
                   >
@@ -267,7 +298,16 @@ export default function ArticlesPage() {
             <div className="rounded-3xl bg-white/90 p-6 shadow-lg backdrop-blur-md">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-800">Mindful Articles</h2>
-                <button className="text-sm text-[#6E8450] hover:underline">See all</button>
+                <button
+                  onClick={() => {
+                    setActiveFilter(null)
+                    setSearchQuery("")
+                    loadArticles()
+                  }}
+                  className="text-sm text-[#6E8450] hover:underline"
+                >
+                  See all
+                </button>
               </div>
               <div className="space-y-4">
                 {articles.slice(0, 2).map((article) => (

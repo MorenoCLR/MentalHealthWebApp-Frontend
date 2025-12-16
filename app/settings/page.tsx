@@ -326,7 +326,7 @@ export default function SettingsPage() {
                       type="text"
                       value={profileData.full_name}
                       onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
-                      className="w-full rounded-full border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
+                      className="w-full rounded-full border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
                       placeholder="Enter your full name"
                     />
                   </div>
@@ -340,7 +340,7 @@ export default function SettingsPage() {
                       type="text"
                       value={profileData.location}
                       onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                      className="w-full rounded-full border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
+                      className="w-full rounded-full border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
                       placeholder="City, Country"
                     />
                   </div>
@@ -354,7 +354,7 @@ export default function SettingsPage() {
                       type="tel"
                       value={profileData.phone}
                       onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                      className="w-full rounded-full border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
+                      className="w-full rounded-full border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
                       placeholder="+1 (555) 000-0000"
                     />
                   </div>
@@ -367,7 +367,7 @@ export default function SettingsPage() {
                       value={profileData.bio}
                       onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
                       rows={4}
-                      className="w-full rounded-3xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
+                      className="w-full rounded-3xl border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
                       placeholder="Tell us about yourself..."
                     />
                   </div>

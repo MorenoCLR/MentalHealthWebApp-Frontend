@@ -53,7 +53,7 @@ export async function savePhysicalHealth(formData: FormData) {
   return { success: true }
 }
 
-export async function getLatestPhysicalHealth() {
+export async function getLast7DaysPhysicalHealth() {
   const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -62,16 +62,18 @@ export async function getLatestPhysicalHealth() {
     redirect('/login')
   }
 
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
   const { data, error } = await supabase
     .from('physical_health')
     .select('*')
     .eq('user_id', user.id)
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .single()
+    .gte('created_at', sevenDaysAgo.toISOString())
+    .order('created_at', { ascending: false })
 
   if (error) {
-    return { error: error.message, data: null }
+    return { error: error.message, data: [] }
   }
 
   return { data, error: null }

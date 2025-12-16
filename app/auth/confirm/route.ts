@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
-  const next = searchParams.get('next') || '/account'
+  const next = searchParams.get('next') || '/dashboard'
 
   // Create redirect link without the secret token
   const redirectTo = request.nextUrl.clone()
@@ -16,6 +16,29 @@ export async function GET(request: NextRequest) {
   redirectTo.searchParams.delete('code')
   redirectTo.searchParams.delete('type')
   redirectTo.searchParams.delete('token_hash')
+
+  // Handle password recovery FIRST (before code) - Supabase sends both code and type=recovery
+  if (type === 'recovery' && code) {
+    const supabase = await createClient()
+    
+    try {
+      const { error } = await supabase.auth.exchangeCodeForSession(code)
+      
+      if (!error) {
+        console.log('Password recovery session established')
+        const resetUrl = request.nextUrl.clone()
+        resetUrl.pathname = '/reset-password'
+        resetUrl.searchParams.delete('code')
+        resetUrl.searchParams.delete('type')
+        resetUrl.searchParams.delete('token_hash')
+        return NextResponse.redirect(resetUrl)
+      }
+      
+      console.error('Recovery code exchange error:', error)
+    } catch (err) {
+      console.error('Unexpected error during recovery code exchange:', err)
+    }
+  }
 
   // Handle email confirmation with code (from signUp)
   if (code) {

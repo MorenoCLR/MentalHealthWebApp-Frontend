@@ -15,7 +15,7 @@ export default function VisualizationPage() {
   const [moodData, setMoodData] = useState<MoodData[]>([])
   const [stats, setStats] = useState<MoodStats | null>(null)
   const [weeklyMoods, setWeeklyMoods] = useState<WeeklyMood[]>([])
-  const [username, setUsername] = useState("Moreno Cello Rhythm")
+  const [username, setUsername] = useState<string | null>(null)
   const [userStats] = useState("60 kg | 170 cm")
 
   useEffect(() => {
@@ -167,18 +167,19 @@ export default function VisualizationPage() {
                   <p className="text-gray-400">No mood data available</p>
                 </div>
               ) : (
-                <div className="h-full flex items-end justify-between gap-1 px-2">
+                <div className="h-full bg-gray-50 rounded-lg p-4 flex items-end justify-between gap-2">
                   {moodData.map((mood, index) => (
                     <div key={mood.id} className="flex-1 flex flex-col items-center gap-2">
                       <div
-                        className="w-full rounded-t-lg transition-all duration-300 hover:opacity-80"
+                        className="w-full rounded-t-lg transition-all duration-300 hover:opacity-80 shadow-sm"
                         style={{
                           backgroundColor: getBarColor(mood.mood_rating),
-                          height: getBarHeight(mood.mood_rating)
+                          height: getBarHeight(mood.mood_rating),
+                          minHeight: '8px'
                         }}
                       ></div>
                       {(index === 0 || index === moodData.length - 1) && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-600 font-medium">
                           {formatDateLabel(mood.mood_at, index, moodData.length)}
                         </span>
                       )}

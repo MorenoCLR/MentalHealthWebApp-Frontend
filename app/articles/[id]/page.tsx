@@ -8,6 +8,7 @@ type Article = {
   id: string
   title: string
   content: string
+  url?: string
   date_published: string
   created_at: string
   updated_at: string
@@ -145,6 +146,22 @@ export default function ArticleDetailPage() {
               </p>
             </div>
           </div>
+
+          {/* Go to article button */}
+          {article.url && (
+            <div className="mt-8 rounded-2xl bg-gradient-to-r from-[#A4B870] to-[#6E8450] p-6 text-center">
+              <h3 className="text-xl font-semibold text-white mb-3">Read the Full Article</h3>
+              <p className="text-white/90 text-sm mb-4">Visit the original source for the complete article</p>
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-3 text-lg font-semibold text-[#6E8450] hover:bg-white/90 transition-colors shadow-lg"
+              >
+                Go to article →
+              </a>
+            </div>
+          )}
 
           {/* Share and actions */}
           <div className="mt-12 flex items-center justify-between border-t pt-6">

@@ -44,8 +44,8 @@ export async function getRelaxationSuggestions() {
     redirect('/login')
   }
 
-  // Get the user's most recent mood
-  const { data: recentMood, error: moodError } = await supabase
+  // Get the user's most recent mood (optional)
+  const { data: recentMood } = await supabase
     .from('moods')
     .select('*')
     .eq('user_id', user.id)
@@ -53,48 +53,40 @@ export async function getRelaxationSuggestions() {
     .limit(1)
     .single()
 
-  if (moodError || !recentMood) {
-    return { 
-      error: 'NO_MOOD_DATA',
-      message: 'No recent mood data found',
-      activities: []
-    }
-  }
-
-  // Check if mood is too low (rating 1-2)
-  if (recentMood.mood_rating <= 2) {
-    return {
-      error: 'LOW_MOOD',
-      message: 'Your mood is not high enough for personalized suggestions',
-      moodRating: recentMood.mood_rating,
-      activities: []
-    }
-  }
-
   // Check if suggestions already exist for this mood
-  const { data: existingSuggestions, error: suggestionError } = await supabase
-    .from('relaxation_suggestions')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('mood_id', recentMood.id)
-
-  // If no existing suggestions, create them
-  if (!existingSuggestions || existingSuggestions.length === 0) {
-    const suggestions = RELAXATION_ACTIVITIES.map(activity => ({
-      user_id: user.id,
-      mood_id: recentMood.id,
-      activity_suggestion: JSON.stringify(activity)
-    }))
-
-    await supabase
+  if (recentMood) {
+    const { data: existingSuggestions } = await supabase
       .from('relaxation_suggestions')
-      .insert(suggestions)
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('mood_id', recentMood.id)
+
+    // If no existing suggestions, create them
+    if (!existingSuggestions || existingSuggestions.length === 0) {
+      const suggestions = RELAXATION_ACTIVITIES.map(activity => ({
+        user_id: user.id,
+        mood_id: recentMood.id,
+        activity_suggestion: JSON.stringify(activity)
+      }))
+
+      await supabase
+        .from('relaxation_suggestions')
+        .insert(suggestions)
+    }
   }
+
+  const moodRating = recentMood?.mood_rating ?? null
+  const infoMessage = !recentMood
+    ? 'No recent mood logged — showing general relaxation ideas.'
+    : moodRating !== null && moodRating <= 2
+      ? 'Your mood seems low. Here are gentle relaxation ideas you can try now.'
+      : null
 
   return {
     error: null,
     activities: RELAXATION_ACTIVITIES,
-    moodRating: recentMood.mood_rating
+    moodRating,
+    message: infoMessage,
   }
 }
 

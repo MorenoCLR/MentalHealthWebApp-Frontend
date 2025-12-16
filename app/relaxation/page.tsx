@@ -8,7 +8,8 @@ import { getRelaxationSuggestions, type RelaxationActivity } from "./actions"
 export default function RelaxationPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<'LOW_MOOD' | 'NO_MOOD_DATA' | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
   const [activities, setActivities] = useState<RelaxationActivity[]>([])
 
   useEffect(() => {
@@ -24,16 +25,20 @@ export default function RelaxationPage() {
     try {
       const result = await getRelaxationSuggestions()
 
-      if (result.error === 'LOW_MOOD') {
-        setError('LOW_MOOD')
-      } else if (result.error === 'NO_MOOD_DATA') {
-        setError('NO_MOOD_DATA')
-      } else {
+      if (result.error) {
+        setError(result.error as string)
+      }
+
+      if (result.message) {
+        setInfo(result.message)
+      }
+
+      if (result.activities) {
         setActivities(result.activities)
       }
     } catch (err) {
       console.error(err)
-      setError('NO_MOOD_DATA')
+      setError('Unable to load relaxation suggestions')
     } finally {
       setLoading(false)
     }
@@ -80,78 +85,6 @@ export default function RelaxationPage() {
     )
   }
 
-  // Error state - Low mood
-  if (error === 'LOW_MOOD') {
-    return (
-      <div className="relative min-h-screen w-full bg-[#FF8C69] overflow-hidden">
-        {/* Decorative background patterns */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
-          <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
-          <div className="absolute top-40 right-32 w-96 h-96 border-4 border-white rounded-full"></div>
-          <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
-        </div>
-
-        {/* Back button */}
-        <button
-          onClick={() => router.back()}
-          className="absolute top-6 left-6 w-10 h-10 border-2 border-white/50 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:border-white transition-colors"
-        >
-          ←
-        </button>
-
-        {/* Error content */}
-        <main className="relative flex flex-col items-center justify-center min-h-screen px-8 text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">
-            Seems like your mood its not enough!!!
-          </h1>
-
-          <button
-            onClick={handleMoodRedirect}
-            className="text-xl text-white hover:underline"
-          >
-            Please log your mood again
-          </button>
-        </main>
-      </div>
-    )
-  }
-
-  // Error state - No mood data
-  if (error === 'NO_MOOD_DATA') {
-    return (
-      <div className="relative min-h-screen w-full bg-[#FF8C69] overflow-hidden">
-        {/* Decorative background patterns */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
-          <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
-          <div className="absolute top-40 right-32 w-96 h-96 border-4 border-white rounded-full"></div>
-          <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
-        </div>
-
-        {/* Back button */}
-        <button
-          onClick={() => router.back()}
-          className="absolute top-6 left-6 w-10 h-10 border-2 border-white/50 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:border-white transition-colors"
-        >
-          ←
-        </button>
-
-        {/* Error content */}
-        <main className="relative flex flex-col items-center justify-center min-h-screen px-8 text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">
-            No mood data found!
-          </h1>
-
-          <button
-            onClick={handleMoodRedirect}
-            className="text-xl text-white hover:underline"
-          >
-            Please log your mood first
-          </button>
-        </main>
-      </div>
-    )
-  }
-
   // Success state - Show activities
   return (
     <div className="relative min-h-screen w-full bg-[#A4B870] overflow-hidden pb-12">
@@ -162,12 +95,32 @@ export default function RelaxationPage() {
         <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
       </div>
 
+      {/* Back button */}
+      <button
+        onClick={() => router.push('/dashboard')}
+        className="absolute top-6 left-6 w-10 h-10 border-2 border-white/50 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:border-white transition-colors z-10"
+      >
+        ←
+      </button>
+
       {/* Main content */}
       <main className="relative px-6 py-12">
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-4xl font-bold text-white mb-12">
-            Here are the list relaxation for you
+          <h1 className="text-4xl font-bold text-white mb-6">
+            Here are the relaxation ideas for you
           </h1>
+
+          {info && (
+            <div className="mb-8 rounded-2xl bg-white/20 border border-white/30 text-white px-4 py-3">
+              {info}
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-8 rounded-2xl bg-red-500/20 border border-red-500/40 text-white px-4 py-3">
+              {error}
+            </div>
+          )}
 
           {/* Activities list */}
           <div className="space-y-6">
@@ -190,20 +143,17 @@ export default function RelaxationPage() {
 
                 {/* Image */}
                 <div className="flex-1 h-64 bg-gray-200 relative overflow-hidden">
-                  {/* Placeholder for image - you can replace with actual images */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400">
-                    <span className="text-6xl opacity-50">
-                      {activity.id === 'running-walking' && '🏃'}
-                      {activity.id === 'yoga' && '🧘'}
-                      {activity.id === 'reading' && '📖'}
-                    </span>
-                  </div>
-                  {/* Uncomment when you have actual images */}
-                  {/* <img 
-                    src={activity.image} 
+                  <img 
+                    src={
+                      activity.id === 'running-walking' 
+                        ? 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&h=600&fit=crop'
+                        : activity.id === 'yoga'
+                        ? 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&h=600&fit=crop'
+                        : 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800&h=600&fit=crop'
+                    }
                     alt={activity.title}
                     className="w-full h-full object-cover"
-                  /> */}
+                  />
                 </div>
               </div>
             ))}

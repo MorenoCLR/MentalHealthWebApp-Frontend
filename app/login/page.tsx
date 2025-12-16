@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState<string>("")
   const [token, setToken] = useState<string>("")
   const [loading, setLoading] = useState(false)
+  const [resetCooldown, setResetCooldown] = useState(0)
 
   return (
     <div className="relative min-h-screen w-full bg-[#F5F5F0] overflow-hidden">
@@ -28,14 +29,14 @@ export default function LoginPage() {
             <h1 className="text-2xl font-bold text-[#6E8450]">Login</h1>
 
             <div className="mt-6">
-              <div className="text-left text-xs text-[#93a664] mb-2">Email Address</div>
+              <div className="text-left text-xs text-gray-700 font-medium mb-2">Email Address</div>
               <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email..." className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]" type="email" />
             </div>
 
             {mode === "password" && (
               <form action="/api/auth/login" method="post" className="mt-4">
                 <input type="hidden" name="email" value={email} />
-                <div className="text-left text-xs text-[#93a664] mb-2">Password</div>
+                <div className="text-left text-xs text-gray-700 font-medium mb-2">Password</div>
                 <div className="relative">
                   <input name="password" placeholder="Enter your password..." className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm pr-10 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]" type="password" />
                 </div>
@@ -81,7 +82,7 @@ export default function LoginPage() {
                         alert('OTP verification failed: ' + (error.message || 'unknown'))
                         return
                       }
-                      window.location.href = '/account'
+                      window.location.href = '/dashboard'
                     }}
                     className="mt-4 w-full rounded-full bg-[#A4B870] px-6 py-3 text-white"
                   >
@@ -96,6 +97,7 @@ export default function LoginPage() {
                 <p className="text-sm text-gray-600">Enter your registered email to receive a password reset link.</p>
                 <button
                   onClick={async () => {
+                    if (resetCooldown > 0) return
                     setLoading(true)
                     const { error } = await resetPasswordClient(email)
                     setLoading(false)
@@ -104,11 +106,21 @@ export default function LoginPage() {
                       return
                     }
                     alert('Reset email sent — check your inbox.')
-                    window.location.href = '/login'
+                    setResetCooldown(60)
+                    const timer = setInterval(() => {
+                      setResetCooldown(prev => {
+                        if (prev <= 1) {
+                          clearInterval(timer)
+                          return 0
+                        }
+                        return prev - 1
+                      })
+                    }, 1000)
                   }}
-                  className="mt-6 w-full rounded-full bg-[#A4683c] px-6 py-3 text-white"
+                  disabled={resetCooldown > 0 || loading}
+                  className="mt-6 w-full rounded-full bg-[#A4683c] px-6 py-3 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Sending…' : 'Send Password'}
+                  {loading ? 'Sending…' : resetCooldown > 0 ? `Wait ${resetCooldown}s` : 'Send Reset Link'}
                 </button>
               </div>
             )}
