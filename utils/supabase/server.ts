@@ -7,8 +7,8 @@ export async function createClient() {
   // Create a server's supabase client with newly configured cookie,
   // which could be used to maintain user's session
   return createServerClient(
-    process.env.SUPABASE_URL!,        // ✅ correct server var
-    process.env.SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
