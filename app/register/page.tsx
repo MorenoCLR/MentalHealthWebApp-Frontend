@@ -5,6 +5,8 @@ import { createClient } from "@/utils/supabase/client";
 import {
   CheckCircle2,
   Smile,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export default function RegisterPage() {
@@ -13,6 +15,7 @@ export default function RegisterPage() {
   // UI states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -298,18 +301,29 @@ const handleRegister = async () => {
           </div>
 
           {/* Password */}
-          <div>
+          <div className="relative">
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Enter your password..."
               className={`w-full px-5 py-3 rounded-full border ${
                 passwordError
                   ? "border-red-400 bg-red-50"
                   : "border-gray-300"
-              } text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]`}
+              } text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870] pr-12`}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
             {passwordError && (
               <p className="text-red-500 text-sm mt-1">{passwordError}</p>
             )}

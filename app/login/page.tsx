@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { sendOtpClient, verifyOtpClient, resetPasswordClient, resendConfirmationClient } from "./clientAuth"
+import { Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const searchParams = useSearchParams()
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [token, setToken] = useState<string>("")
   const [loading, setLoading] = useState(false)
   const [resetCooldown, setResetCooldown] = useState(0)
+  const [showPassword, setShowPassword] = useState(false)
 
   return (
     <div className="relative min-h-screen w-full bg-[#F5F5F0] overflow-hidden">
@@ -38,7 +40,18 @@ export default function LoginPage() {
                 <input type="hidden" name="email" value={email} />
                 <div className="text-left text-xs text-gray-700 font-medium mb-2">Password</div>
                 <div className="relative">
-                  <input name="password" placeholder="Enter your password..." className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm pr-10 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]" type="password" />
+                  <input name="password" placeholder="Enter your password..." className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm pr-10 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]" type={showPassword ? "text" : "password"} />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
 
                 <div className="mt-4 text-left text-xs">

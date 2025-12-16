@@ -12,9 +12,8 @@ Next.js 16 (App Router) + Supabase mental health web app with cookie-based auth,
    import { createClient } from '@/utils/supabase/server'
    const supabase = await createClient()  // Always await!
    ```
-   - Environment vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (no `NEXT_PUBLIC_` prefix in server env)
-   - Used in: Server actions (`actions.ts`), API routes `/app/api/auth/*`, `/app/auth/confirm`
-   - Example: Auth checks, RLS-protected queries, session management
+   - Environment vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - Used in: Server actions (`actions.ts`), Server Components, API routes
 
 2. **Client Components** → `@/utils/supabase/client`
    ```ts
@@ -174,17 +173,10 @@ export default function Page() {
 
 **Required in `.env.local`**:
 ```env
-# Server-side (no NEXT_PUBLIC_ prefix)
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=eyJ...
-
-# Client-side (NEXT_PUBLIC_ prefix required)
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJ...  # Use anon key if publishable not available
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJ...
 NEXT_PUBLIC_APP_URL=http://localhost:3000   # Required for auth redirects
 ```
-
-**Critical**: Both sets must have same URL/key values or auth will fail.
 
 ## Styling Conventions
 
