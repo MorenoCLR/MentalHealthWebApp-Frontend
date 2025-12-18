@@ -136,7 +136,7 @@ export default function DashboardPage() {
                     data?.latestMood?.mood_rating === 2 ? "😰" : "😢"
 
   return (
-    <div className="min-h-screen bg-[#F5F5F0]">
+    <div className="min-h-screen bg-[#F5F5F0] pb-12">
       {/* Navbar */}
       <Navbar />
 
@@ -306,16 +306,16 @@ export default function DashboardPage() {
             {data?.weeklyMoods?.length ? (
               <div className="flex items-center gap-3 mb-3 text-[10px]">
                 <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-[#A4B870]"></div>
-                  <span className="text-gray-500">Good</span>
+                  <div className="w-2 h-2 rounded-full bg-[#FF8C69]"></div>
+                  <span className="text-gray-500">Low</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-[#E5D68A]"></div>
                   <span className="text-gray-500">Okay</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-[#FF8C69]"></div>
-                  <span className="text-gray-500">Low</span>
+                  <div className="w-2 h-2 rounded-full bg-[#A4B870]"></div>
+                  <span className="text-gray-500">Good</span>
                 </div>
               </div>
             ) : null}

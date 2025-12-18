@@ -42,6 +42,11 @@ export default function ArticlesPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeFilter, setActiveFilter] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const loadArticles = useCallback(async () => {
     setLoading(true)
@@ -108,28 +113,35 @@ export default function ArticlesPage() {
 
   if (loading) {
     return (
-      <div className="relative min-h-screen w-full bg-[#A4B870] overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute inset-0 overflow-hidden">
-          {decorativeCircles.map((circle) => (
-            <div
-              key={circle.key}
-              className="absolute rounded-full bg-white/20"
-              style={{
-                width: `${circle.width}px`,
-                height: `${circle.height}px`,
-                left: `${circle.left}%`,
-                top: `${circle.top}%`,
-              }}
-            />
-          ))}
-        </div>
+      <div className="relative min-h-screen w-full bg-[#A4B870]">
+        {/* Navbar */}
+        <Navbar />
 
-        <div className="relative z-10 flex min-h-screen items-center justify-center">
-          <div className="text-center text-white">
-            <div className="mx-auto mb-6 h-16 w-16 animate-spin rounded-full border-4 border-white/30 border-t-white" />
-            <h2 className="text-2xl font-semibold">Let us load all the articles.</h2>
-            <p className="mt-2 text-sm opacity-80">Express your emotions by reading</p>
+        {/* Decorative circles - only render on client to avoid hydration error */}
+        {mounted && (
+          <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+            {decorativeCircles.map((circle) => (
+              <div
+                key={circle.key}
+                className="absolute rounded-full bg-white/20"
+                style={{
+                  width: `${circle.width}px`,
+                  height: `${circle.height}px`,
+                  left: `${circle.left}%`,
+                  top: `${circle.top}%`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="md:ml-20">
+          <div className="relative z-10 flex min-h-screen items-center justify-center">
+            <div className="text-center text-white">
+              <div className="mx-auto mb-6 h-16 w-16 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+              <h2 className="text-2xl font-semibold">Let us load all the articles.</h2>
+              <p className="mt-2 text-sm opacity-80">Express your emotions by reading</p>
+            </div>
           </div>
         </div>
       </div>
@@ -138,30 +150,37 @@ export default function ArticlesPage() {
 
   if (error || articles.length === 0) {
     return (
-      <div className="relative min-h-screen w-full bg-[#D85A43] overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute inset-0 overflow-hidden">
-          {decorativeCircles.map((circle) => (
-            <div
-              key={circle.key}
-              className="absolute rounded-full bg-white/20"
-              style={{
-                width: `${circle.width}px`,
-                height: `${circle.height}px`,
-                left: `${circle.left}%`,
-                top: `${circle.top}%`,
-              }}
-            />
-          ))}
-        </div>
+      <div className="relative min-h-screen w-full bg-[#D85A43]">
+        {/* Navbar */}
+        <Navbar />
 
-        <div className="relative z-10 flex min-h-screen items-center justify-center">
-          <div className="text-center text-white">
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white">
-              <span className="text-4xl text-[#D85A43]">✕</span>
+        {/* Decorative circles - only render on client to avoid hydration error */}
+        {mounted && (
+          <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+            {decorativeCircles.map((circle) => (
+              <div
+                key={circle.key}
+                className="absolute rounded-full bg-white/20"
+                style={{
+                  width: `${circle.width}px`,
+                  height: `${circle.height}px`,
+                  left: `${circle.left}%`,
+                  top: `${circle.top}%`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="md:ml-20">
+          <div className="relative z-10 flex min-h-screen items-center justify-center">
+            <div className="text-center text-white">
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white">
+                <span className="text-4xl text-[#D85A43]">✕</span>
+              </div>
+              <h2 className="text-2xl font-semibold">There are no article at this moment...</h2>
+              <p className="mt-2 text-sm opacity-80">Please Try Again Later</p>
             </div>
-            <h2 className="text-2xl font-semibold">There are no article at this moment...</h2>
-            <p className="mt-2 text-sm opacity-80">Please Try Again Later</p>
           </div>
         </div>
       </div>
@@ -169,25 +188,22 @@ export default function ArticlesPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#A4B870]">
+    <div className="min-h-screen w-full bg-[#A4B870] pb-12">
       {/* Navbar */}
       <Navbar />
       
       <div className="md:ml-20 p-6">
         <div className="mx-auto max-w-7xl">
-          {/* Back button */}
-          <button
-            onClick={() => router.back()}
-            className="mb-6 flex items-center gap-2 text-white/90 hover:text-white transition-colors mt-12 md:mt-0"
-          >
-          <span className="text-2xl">←</span>
-        </button>
+          {/* Page Header */}
+          <div className="mb-6 mt-12 md:mt-0">
+            <h2 className="text-2xl font-semibold text-white">Articles</h2>
+          </div>
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Articles</h1>
-          <p className="text-white/80">Real your mind by reading...</p>
-        </div>
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-white mb-2">Explore Articles</h1>
+            <p className="text-white/80">Read your mind by reading...</p>
+          </div>
 
         {/* Search bar */}
         <div className="mb-6">

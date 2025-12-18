@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     // Fetch today's physical health log
     const { data, error } = await supabase
       .from('physical_health')
-      .select('id')
+      .select('id, complaints')
       .eq('user_id', user.id)
       .gte('created_at', `${today}T00:00:00`)
       .lt('created_at', `${today}T23:59:59`)
@@ -44,6 +44,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       loggedToday: !!data,
+      todayData: data?.complaints || null,
     }, { headers })
   } catch (err) {
     console.error('Error in physical-health-today route:', err)

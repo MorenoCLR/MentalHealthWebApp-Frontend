@@ -131,7 +131,7 @@ export default function MoodLoggingPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden transition-colors duration-500">
+    <div className="relative min-h-screen w-full transition-colors duration-500 pb-12">
       {/* Navbar */}
       <Navbar />
 

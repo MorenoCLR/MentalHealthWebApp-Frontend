@@ -22,6 +22,8 @@ export default function PhysicalHealthPage() {
   const [healthLogs, setHealthLogs] = useState<HealthEntry[]>([])
   const [loggedToday, setLoggedToday] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [showChangeConfirm, setShowChangeConfirm] = useState(false)
+  const [todayHealthData, setTodayHealthData] = useState<any>(null)
 
   useEffect(() => {
     async function fetchData() {
@@ -38,6 +40,9 @@ export default function PhysicalHealthPage() {
         if (healthRes.ok) {
           const healthData = await healthRes.json()
           setLoggedToday(healthData.loggedToday)
+          if (healthData.todayData) {
+            setTodayHealthData(healthData.todayData)
+          }
         }
       } catch (err) {
         console.error('Error fetching data:', err)
@@ -87,6 +92,24 @@ export default function PhysicalHealthPage() {
     setError(null)
   }
 
+  const handleChangeConfirm = () => {
+    setShowChangeConfirm(false)
+    setLoggedToday(false)
+
+    // Pre-populate form with today's data if available
+    if (todayHealthData) {
+      try {
+        const data = JSON.parse(todayHealthData)
+        if (data.weight) setWeight(data.weight.toString())
+        if (data.sleepHours) setSleepHours(data.sleepHours.toString())
+        if (data.stepCounts) setStepCounts(data.stepCounts.toString())
+      } catch (e) {
+        console.error('Error parsing today health data:', e)
+      }
+    }
+    setError(null)
+  }
+
   const handleSubmit = async () => {
     if (!weight && !sleepHours && !stepCounts) {
       setError("Please fill in at least one field")
@@ -133,12 +156,12 @@ export default function PhysicalHealthPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full bg-[#A67C52] overflow-hidden">
+    <div className="relative min-h-screen w-full bg-[#A67C52] pb-12">
       {/* Navbar */}
       <Navbar />
 
       {/* Decorative background patterns */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-10 z-0">
         <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
         <div className="absolute top-40 right-32 w-96 h-96 border-4 border-white rounded-full"></div>
         <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
@@ -257,14 +280,22 @@ export default function PhysicalHealthPage() {
               </button>
             </div>
 
-            {/* Show history button when logged today */}
+            {/* Action buttons when logged today */}
             {loggedToday && (
-              <button
-                onClick={() => setShowHistory(true)}
-                className="mt-6 px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-full font-medium transition-colors"
-              >
-                See The Latest Week History
-              </button>
+              <div className="flex flex-col gap-3 mt-6">
+                <button
+                  onClick={() => setShowChangeConfirm(true)}
+                  className="px-6 py-3 bg-white text-[#A67C52] font-medium rounded-full hover:bg-gray-100 transition-colors shadow-lg"
+                >
+                  Change my physical health log today
+                </button>
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-full font-medium transition-colors"
+                >
+                  See The Latest Week History
+                </button>
+              </div>
             )}
           </div>
         ) : (
@@ -330,6 +361,42 @@ export default function PhysicalHealthPage() {
         )}
         </main>
       </div>
+
+      {/* Change Confirmation Modal */}
+      {showChangeConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-8 z-50">
+          <div className="bg-[#A67C52] rounded-3xl p-8 max-w-md w-full text-center">
+            <h2 className="text-2xl font-semibold text-white mb-6">
+              Change Physical Health Log?
+            </h2>
+
+            <div className="flex items-center justify-center mb-8">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                <span className="text-2xl">💪</span>
+              </div>
+            </div>
+
+            <p className="text-white mb-6">
+              Are you sure you want to change your physical health log for today?
+            </p>
+
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => setShowChangeConfirm(false)}
+                className="px-8 py-3 bg-white text-gray-800 rounded-full font-medium hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangeConfirm}
+                className="px-8 py-3 bg-white text-gray-800 rounded-full font-medium hover:bg-gray-100 transition-colors"
+              >
+                Yes, Change
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

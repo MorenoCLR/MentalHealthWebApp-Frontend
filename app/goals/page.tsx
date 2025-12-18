@@ -214,12 +214,12 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full bg-[#A4B870] overflow-hidden">
+    <div className="relative min-h-screen w-full bg-[#A4B870] pb-12">
       {/* Navbar */}
       <Navbar />
 
       {/* Decorative background patterns */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-10 z-0">
         <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
         <div className="absolute top-40 right-32 w-96 h-96 border-4 border-white rounded-full"></div>
         <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>

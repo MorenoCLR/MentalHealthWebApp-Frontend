@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { getArticleById } from "../actions"
+import Navbar from "@/components/Navbar"
 
 type Article = {
   id: string
@@ -45,6 +46,7 @@ export default function ArticleDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0]">
+        <Navbar />
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#A4B870]/30 border-t-[#A4B870]" />
           <p className="text-gray-600">Loading article...</p>
@@ -56,6 +58,7 @@ export default function ArticleDetailPage() {
   if (error || !article) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0]">
+        <Navbar />
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
             <span className="text-2xl text-red-500">✕</span>
@@ -73,15 +76,23 @@ export default function ArticleDetailPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#A4B870] p-6">
-      <div className="mx-auto max-w-4xl">
-        {/* Back button */}
-        <button
-          onClick={() => router.back()}
-          className="mb-6 flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-        >
-          <span className="text-2xl">←</span>
-        </button>
+    <div className="min-h-screen w-full bg-[#A4B870] pb-12">
+      {/* Navbar */}
+      <Navbar />
+
+      {/* Main content with sidebar offset */}
+      <div className="md:ml-20 p-6">
+        <div className="mx-auto max-w-4xl">
+          {/* Page Header with Back Button */}
+          <div className="mb-6 mt-12 md:mt-0">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-white hover:bg-white/10 px-4 py-2 rounded-full transition-colors"
+            >
+              <span className="text-2xl">←</span>
+              <span className="font-medium">Back to Articles</span>
+            </button>
+          </div>
 
         {/* Article content */}
         <div className="rounded-3xl bg-white/95 p-8 shadow-xl backdrop-blur-md md:p-12">
@@ -178,6 +189,7 @@ export default function ArticleDetailPage() {
               <button className="hover:text-[#6E8450]">💬 Comment</button>
             </div>
           </div> */}
+        </div>
         </div>
       </div>
     </div>
