@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 export async function getUserProfile() {
   const supabase = await createClient()
@@ -141,6 +142,31 @@ export async function deleteAccount(formData: FormData) {
 
   if (error) {
     return { error: error.message }
+  }
+
+  // Delete from Supabase Auth using admin client
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  if (serviceRoleKey) {
+    const adminSupabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    const { error: deleteError } = await adminSupabase.auth.admin.deleteUser(user.id)
+    
+    if (deleteError) {
+      console.error('Error deleting auth user:', deleteError)
+      // We continue to sign out even if auth deletion failed, as data is already gone
+    }
+  } else {
+    console.error('SUPABASE_SERVICE_ROLE_KEY is not set. Skipping auth user deletion.')
   }
 
   // Sign out
