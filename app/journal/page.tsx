@@ -222,10 +222,10 @@ export default function JournalPage() {
               </header>
 
               {/* Content Editor */}
-              <div className="flex-1 overflow-y-auto p-8">
-                <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur rounded-3xl shadow-2xl min-h-full flex flex-col">
+              <div className="flex-1 overflow-y-auto p-8 flex flex-col min-h-0">
+                <div className="flex-1 max-w-4xl mx-auto bg-white/95 backdrop-blur rounded-3xl shadow-2xl flex flex-col w-full">
                   {/* Title Section */}
-                  <div className="border-b border-gray-100 p-8 pb-4">
+                  <div className="border-b border-gray-100 p-8 pb-4 flex-shrink-0">
                     <input
                       type="text"
                       value={title}
@@ -240,30 +240,31 @@ export default function JournalPage() {
                     )}
                     <p className="text-sm text-[#6E8450] font-medium mt-2 flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#6E8450]"></span>
-                      {isCreating 
-                        ? new Date().toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
+                      {isCreating
+                        ? new Date().toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
                           })
-                        : new Date(selectedJournal!.date_created).toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
+                        : new Date(selectedJournal!.date_created).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
                           })
                       }
                     </p>
                   </div>
 
                   {/* Text Area */}
-                  <div className="p-8 flex-1">
+                  <div className="p-8 flex-1 flex flex-col min-h-0">
                     <textarea
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
-                      className="w-full h-full text-lg text-gray-600 bg-transparent border-none outline-none resize-none placeholder:text-gray-300 focus:ring-0 leading-relaxed"
+                      className="w-full flex-1 text-lg text-gray-600 bg-transparent border-none outline-none resize-none placeholder:text-gray-300 focus:ring-0 leading-relaxed min-h-0"
                       placeholder="What's on your mind today?"
+                      style={{ height: '100%' }}
                     />
                   </div>
                 </div>

@@ -163,7 +163,7 @@ export default function ArticleDetailPage() {
             </div>
           )}
 
-          {/* Share and actions */}
+          {/* Share and actions
           <div className="mt-12 flex items-center justify-between border-t pt-6">
             <div className="flex gap-4">
               <button className="rounded-full bg-[#A4B870] px-6 py-2 text-white hover:bg-[#6E8450] transition-colors">
@@ -177,7 +177,7 @@ export default function ArticleDetailPage() {
               <button className="hover:text-[#6E8450]">👍 Like</button>
               <button className="hover:text-[#6E8450]">💬 Comment</button>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
