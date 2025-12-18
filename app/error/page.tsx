@@ -1,8 +1,9 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
-export default function ErrorPage() {
+function ErrorContent() {
     const searchParams = useSearchParams()
     const reason = searchParams.get('reason') || 'unknown'
 
@@ -47,14 +48,14 @@ export default function ErrorPage() {
                     {error.message}
                 </p>
                 <div className="pt-4 space-y-2">
-                    <a 
-                        href="/register" 
+                    <a
+                        href="/register"
                         className="inline-block bg-[#A4B870] text-white px-6 py-2 rounded-full hover:bg-[#93a664] transition-all"
                     >
                         Register Again
                     </a>
-                    <a 
-                        href="/login" 
+                    <a
+                        href="/login"
                         className="inline-block text-[#A4B870] px-6 py-2 rounded-full hover:underline ml-2"
                     >
                         Login
@@ -62,5 +63,20 @@ export default function ErrorPage() {
                 </div>
             </div>
         </div>
-    );
+    )
+}
+
+export default function ErrorPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-red-50 to-red-100">
+                <div className="text-center">
+                    <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-red-300 border-t-red-600" />
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        }>
+            <ErrorContent />
+        </Suspense>
+    )
 }
