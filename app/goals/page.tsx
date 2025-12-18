@@ -297,6 +297,7 @@ export default function GoalsPage() {
             {filter === 'today' && (
             <div className="space-y-4 mb-6 w-full">
               {goals.filter(g => {
+                if (g.progress === 'Completed') return false
                 const t = g.target
                 const day = dueDate
                 if (t === 'Indefinite') return true
