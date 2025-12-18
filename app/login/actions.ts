@@ -49,6 +49,24 @@ export async function sendOtp(formData: FormData) {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
+  
+  // Check if user exists
+  const { data: exists, error: checkError } = await supabase.rpc('check_email_exists', { 
+    email_to_check: email 
+  })
+
+  if (checkError) {
+    console.error('Error checking email:', checkError)
+    redirect('/error?reason=check_failed')
+  }
+
+  if (!exists) {
+    // We can't easily show a UI error from a server action redirect without query params
+    // or a complex setup. Redirecting to register or showing error via query param.
+    // User asked "show an error like register".
+    redirect('/login?error=email_not_found')
+  }
+
   const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/confirm`
 
   console.log('Sending OTP to:', email)
@@ -57,6 +75,7 @@ export async function sendOtp(formData: FormData) {
     email,
     options: {
       emailRedirectTo: redirectTo,
+      shouldCreateUser: false,
     },
   })
 
