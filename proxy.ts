@@ -26,11 +26,24 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const publicRoutes = ['/', '/login', '/register']
+  const publicRoutes = ['/', '/login']
   const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
+
+  // Allow access to /register if user is confirming email (needs to complete profile)
+  const isRegisterWithConfirmed =
+    request.nextUrl.pathname === '/register' &&
+    request.nextUrl.searchParams.get('confirmed') === 'true'
 
   // If user is logged in and trying to access public routes, redirect to dashboard
   if (user && isPublicRoute) {
+    const protocol = request.headers.get('x-forwarded-proto') || 'https'
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000'
+    const dashboardUrl = new URL('/dashboard', `${protocol}://${host}`)
+    return NextResponse.redirect(dashboardUrl)
+  }
+
+  // If user is logged in and on /register without confirmed=true, redirect to dashboard
+  if (user && request.nextUrl.pathname === '/register' && !isRegisterWithConfirmed) {
     const protocol = request.headers.get('x-forwarded-proto') || 'https'
     const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000'
     const dashboardUrl = new URL('/dashboard', `${protocol}://${host}`)

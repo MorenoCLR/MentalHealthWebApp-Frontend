@@ -10,9 +10,13 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type') as EmailOtpType | null
   const next = searchParams.get('next') || '/dashboard'
 
+  // Get proper host from reverse proxy headers
+  const protocol = request.headers.get('x-forwarded-proto') || 'https'
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000'
+  const baseUrl = `${protocol}://${host}`
+
   // Create redirect link without the secret token
-  const redirectTo = request.nextUrl.clone()
-  redirectTo.pathname = next
+  const redirectTo = new URL(next, baseUrl)
   redirectTo.searchParams.delete('code')
   redirectTo.searchParams.delete('type')
   redirectTo.searchParams.delete('token_hash')
@@ -26,11 +30,7 @@ export async function GET(request: NextRequest) {
       
       if (!error) {
         console.log('Password recovery session established')
-        const resetUrl = request.nextUrl.clone()
-        resetUrl.pathname = '/reset-password'
-        resetUrl.searchParams.delete('code')
-        resetUrl.searchParams.delete('type')
-        resetUrl.searchParams.delete('token_hash')
+        const resetUrl = new URL('/reset-password', baseUrl)
         return NextResponse.redirect(resetUrl)
       }
       
@@ -50,9 +50,9 @@ export async function GET(request: NextRequest) {
       if (!error) {
         console.log('Email confirmed successfully via code')
         // For registration, redirect to profile setup
-        redirectTo.pathname = '/register'
-        redirectTo.searchParams.set('confirmed', 'true')
-        return NextResponse.redirect(redirectTo)
+        const registerUrl = new URL('/register', baseUrl)
+        registerUrl.searchParams.set('confirmed', 'true')
+        return NextResponse.redirect(registerUrl)
       }
       
       console.error('Code exchange error:', error)
@@ -75,20 +75,17 @@ export async function GET(request: NextRequest) {
         console.log('OTP verified successfully')
         // For password recovery, redirect to reset password page
         if (type === 'recovery' || type === 'email_change') {
-          const resetUrl = request.nextUrl.clone()
-          resetUrl.pathname = '/reset-password'
-          resetUrl.searchParams.delete('token_hash')
-          resetUrl.searchParams.delete('type')
+          const resetUrl = new URL('/reset-password', baseUrl)
           return NextResponse.redirect(resetUrl)
         }
-        
+
         // For signup confirmation
         if (type === 'signup' || type === 'email') {
-          redirectTo.pathname = '/register'
-          redirectTo.searchParams.set('confirmed', 'true')
-          return NextResponse.redirect(redirectTo)
+          const registerUrl = new URL('/register', baseUrl)
+          registerUrl.searchParams.set('confirmed', 'true')
+          return NextResponse.redirect(registerUrl)
         }
-        
+
         return NextResponse.redirect(redirectTo)
       }
       
@@ -99,7 +96,7 @@ export async function GET(request: NextRequest) {
   }
 
   // return the user to an error page with some instructions
-  redirectTo.pathname = '/error'
-  redirectTo.searchParams.set('message', 'Email verification failed. Please try signing up again.')
-  return NextResponse.redirect(redirectTo)
+  const errorUrl = new URL('/error', baseUrl)
+  errorUrl.searchParams.set('message', 'Email verification failed. Please try signing up again.')
+  return NextResponse.redirect(errorUrl)
 }
