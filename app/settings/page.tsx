@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import Navbar from "@/components/Navbar"
 import { 
   User, Mail, Lock, Bell, Shield, Database, Trash2, Download, 
   LogOut, ChevronRight, Check, X, Settings as SettingsIcon,
@@ -12,7 +13,7 @@ import {
   deleteAccount, exportUserData, logout, getAccountStats 
 } from "./actions"
 
-type Tab = 'account' | 'profile' | 'security' | 'privacy' | 'notifications' | 'data' | 'about'
+type Tab = 'account' | 'profile' | 'security' | 'notifications' | 'data' | 'about'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -40,6 +41,15 @@ export default function SettingsPage() {
     weeklyReports: true
   })
   const [darkMode, setDarkMode] = useState(false)
+
+  const tabs = [
+    { id: 'account' as Tab, label: 'Account', icon: User },
+    { id: 'profile' as Tab, label: 'Profile', icon: User },
+    { id: 'security' as Tab, label: 'Security', icon: Lock },
+    { id: 'notifications' as Tab, label: 'Notifications', icon: Bell },
+    { id: 'data' as Tab, label: 'Data', icon: Database },
+    { id: 'about' as Tab, label: 'About', icon: SettingsIcon },
+  ]
 
   useEffect(() => {
     loadData()
@@ -159,16 +169,6 @@ export default function SettingsPage() {
     await logout()
   }
 
-  const tabs = [
-    { id: 'account' as Tab, label: 'Account', icon: User },
-    { id: 'profile' as Tab, label: 'Profile', icon: User },
-    { id: 'security' as Tab, label: 'Security', icon: Lock },
-    { id: 'privacy' as Tab, label: 'Privacy', icon: Shield },
-    { id: 'notifications' as Tab, label: 'Notifications', icon: Bell },
-    { id: 'data' as Tab, label: 'Data', icon: Database },
-    { id: 'about' as Tab, label: 'About', icon: SettingsIcon },
-  ]
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0]">
@@ -181,41 +181,37 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F0]">
-      {/* Header */}
-      <div className="bg-[#6E8450] px-6 py-8">
-        <div className="mx-auto max-w-7xl">
-          <button
-            onClick={() => router.back()}
-            className="mb-4 flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-          >
-            <span className="text-2xl">←</span>
-          </button>
-          <h1 className="text-3xl font-bold text-white">Settings</h1>
-          <p className="mt-2 text-white/80">Manage your account and preferences</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#F5F5F0] flex">
+      {/* Shared Navbar */}
+      <Navbar />
 
-      {/* Message Banner */}
-      {message && (
-        <div className={`mx-auto max-w-7xl mt-6 px-6`}>
-          <div className={`rounded-2xl p-4 flex items-center justify-between ${
-            message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}>
-            <div className="flex items-center gap-2">
-              {message.type === 'success' ? <Check size={20} /> : <X size={20} />}
-              <span>{message.text}</span>
+      {/* Main Content Area (offset by Navbar width on desktop) */}
+      <div className="flex-1 md:ml-20 p-6">
+        {/* Page Header */}
+        <div className="mb-8 mt-12 md:mt-0">
+          <h1 className="text-3xl font-bold text-gray-800">Settings</h1>
+          <p className="mt-2 text-gray-600">Manage your account and preferences</p>
+        </div>
+
+        {/* Message Banner */}
+        {message && (
+          <div className={`mb-6`}>
+            <div className={`rounded-2xl p-4 flex items-center justify-between ${
+              message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}>
+              <div className="flex items-center gap-2">
+                {message.type === 'success' ? <Check size={20} /> : <X size={20} />}
+                <span>{message.text}</span>
+              </div>
+              <button onClick={() => setMessage(null)}>
+                <X size={20} />
+              </button>
             </div>
-            <button onClick={() => setMessage(null)}>
-              <X size={20} />
-            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="mx-auto max-w-7xl px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar Navigation */}
+          {/* Sidebar Navigation for Settings */}
           <div className="lg:col-span-1">
             <div className="rounded-3xl bg-white p-6 shadow-lg">
               <nav className="space-y-2">
@@ -241,7 +237,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Main Content */}
+          {/* Main Settings Content */}
           <div className="lg:col-span-3 space-y-6">
             {/* Account Overview */}
             {activeTab === 'account' && (
@@ -355,7 +351,7 @@ export default function SettingsPage() {
                       value={profileData.phone}
                       onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                       className="w-full rounded-full border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
-                      placeholder="+1 (555) 000-0000"
+                      placeholder="+62 8XX-XXXX-XXXX"
                     />
                   </div>
 
@@ -392,6 +388,15 @@ export default function SettingsPage() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Current Email
+                      </label>
+                      <div className="w-full rounded-full border border-gray-200 bg-gray-50 px-4 py-3 text-gray-600">
+                        {userProfile?.email}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         <Mail size={16} className="inline mr-2" />
                         New Email Address
                       </label>
@@ -399,7 +404,7 @@ export default function SettingsPage() {
                         type="email"
                         value={emailData.email}
                         onChange={(e) => setEmailData({ email: e.target.value })}
-                        className="w-full rounded-full border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
+                        className="w-full rounded-full border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
                         placeholder="new.email@example.com"
                       />
                     </div>
@@ -427,7 +432,7 @@ export default function SettingsPage() {
                         type="password"
                         value={passwordData.password}
                         onChange={(e) => setPasswordData({ ...passwordData, password: e.target.value })}
-                        className="w-full rounded-full border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
+                        className="w-full rounded-full border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
                         placeholder="Enter new password"
                       />
                     </div>
@@ -441,7 +446,7 @@ export default function SettingsPage() {
                         type="password"
                         value={passwordData.confirm_password}
                         onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                        className="w-full rounded-full border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
+                        className="w-full rounded-full border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
                         placeholder="Confirm new password"
                       />
                     </div>
@@ -458,61 +463,31 @@ export default function SettingsPage() {
               </>
             )}
 
-            {/* Privacy Settings */}
-            {activeTab === 'privacy' && (
-              <div className="rounded-3xl bg-white p-8 shadow-lg">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Privacy Settings</h2>
-                
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-800">Profile Visibility</p>
-                      <p className="text-sm text-gray-600">Make your profile visible to others</p>
-                    </div>
-                    <button className="relative h-8 w-14 rounded-full bg-gray-300">
-                      <span className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white transition-transform" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-800">Activity Status</p>
-                      <p className="text-sm text-gray-600">Show when you're active</p>
-                    </div>
-                    <button className="relative h-8 w-14 rounded-full bg-[#A4B870]">
-                      <span className="absolute right-1 top-1 h-6 w-6 rounded-full bg-white transition-transform" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-800">Data Analytics</p>
-                      <p className="text-sm text-gray-600">Help us improve the app</p>
-                    </div>
-                    <button className="relative h-8 w-14 rounded-full bg-[#A4B870]">
-                      <span className="absolute right-1 top-1 h-6 w-6 rounded-full bg-white transition-transform" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Notifications Settings */}
             {activeTab === 'notifications' && (
               <div className="rounded-3xl bg-white p-8 shadow-lg">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Notification Preferences</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800">Notification Preferences</h2>
+                  <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                    Coming Soon
+                  </span>
+                </div>
                 
-                <div className="space-y-6">
+                <p className="text-gray-500 mb-6 text-sm">
+                  We are working on bringing you personalized notifications. This feature is currently disabled.
+                </p>
+                
+                <div className="space-y-6 opacity-60 pointer-events-none select-none grayscale">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-800">Email Notifications</p>
                       <p className="text-sm text-gray-600">Receive updates via email</p>
                     </div>
                     <button 
-                      onClick={() => setNotifications({ ...notifications, emailNotifications: !notifications.emailNotifications })}
-                      className={`relative h-8 w-14 rounded-full ${notifications.emailNotifications ? 'bg-[#A4B870]' : 'bg-gray-300'}`}
+                      className="relative h-8 w-14 rounded-full bg-gray-300"
+                      disabled
                     >
-                      <span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-transform ${notifications.emailNotifications ? 'right-1' : 'left-1'}`} />
+                      <span className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white transition-transform" />
                     </button>
                   </div>
 
@@ -522,10 +497,10 @@ export default function SettingsPage() {
                       <p className="text-sm text-gray-600">Daily reminder to log your mood</p>
                     </div>
                     <button 
-                      onClick={() => setNotifications({ ...notifications, moodReminders: !notifications.moodReminders })}
-                      className={`relative h-8 w-14 rounded-full ${notifications.moodReminders ? 'bg-[#A4B870]' : 'bg-gray-300'}`}
+                      className="relative h-8 w-14 rounded-full bg-gray-300"
+                      disabled
                     >
-                      <span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-transform ${notifications.moodReminders ? 'right-1' : 'left-1'}`} />
+                      <span className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white transition-transform" />
                     </button>
                   </div>
 
@@ -535,10 +510,10 @@ export default function SettingsPage() {
                       <p className="text-sm text-gray-600">Reminder to write in your journal</p>
                     </div>
                     <button 
-                      onClick={() => setNotifications({ ...notifications, journalReminders: !notifications.journalReminders })}
-                      className={`relative h-8 w-14 rounded-full ${notifications.journalReminders ? 'bg-[#A4B870]' : 'bg-gray-300'}`}
+                      className="relative h-8 w-14 rounded-full bg-gray-300"
+                      disabled
                     >
-                      <span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-transform ${notifications.journalReminders ? 'right-1' : 'left-1'}`} />
+                      <span className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white transition-transform" />
                     </button>
                   </div>
 
@@ -548,10 +523,10 @@ export default function SettingsPage() {
                       <p className="text-sm text-gray-600">Summary of your mental health progress</p>
                     </div>
                     <button 
-                      onClick={() => setNotifications({ ...notifications, weeklyReports: !notifications.weeklyReports })}
-                      className={`relative h-8 w-14 rounded-full ${notifications.weeklyReports ? 'bg-[#A4B870]' : 'bg-gray-300'}`}
+                      className="relative h-8 w-14 rounded-full bg-gray-300"
+                      disabled
                     >
-                      <span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition-transform ${notifications.weeklyReports ? 'right-1' : 'left-1'}`} />
+                      <span className="absolute left-1 top-1 h-6 w-6 rounded-full bg-white transition-transform" />
                     </button>
                   </div>
                 </div>

@@ -134,18 +134,16 @@ export default function MoodLoggingPage() {
     <div className="relative min-h-screen w-full overflow-hidden transition-colors duration-500">
       {/* Navbar */}
       <Navbar />
-      
-      {/* Back button */}
-      <button
-        onClick={() => router.back()}
-        className="absolute top-6 left-24 md:left-28 flex items-center gap-2 text-white/90 hover:text-white transition-colors z-10"
-      >
-        <span className="text-2xl">←</span>
-        <span className="text-sm font-medium">Daily Mood Logging</span>
-      </button>
 
-      {/* Main content */}
-      <main className="flex min-h-screen w-full items-center justify-center px-8">
+      {/* Main content with sidebar offset */}
+      <div className="md:ml-20">
+        {/* Page Header */}
+        <header className="relative flex items-center justify-between px-6 py-6">
+          <h1 className="text-2xl font-semibold text-white">Mood Check</h1>
+        </header>
+
+        {/* Main content */}
+        <main className="flex min-h-[calc(100vh-100px)] w-full items-center justify-center px-8">
         <div className="w-full max-w-md text-center">
           {/* Greeting with selected/today emoji */}
           <div className="mb-8">
@@ -235,7 +233,8 @@ export default function MoodLoggingPage() {
             </button>
           )}
         </div>
-      </main>
+        </main>
+      </div>
 
       {/* Change Confirmation Modal */}
       {showChangeConfirm && (

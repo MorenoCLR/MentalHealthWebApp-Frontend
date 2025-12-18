@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import Navbar from "@/components/Navbar"
 import { createGoal, updateGoal, getGoals, deleteGoal } from "./actions"
 import { Heart, Plus, Calendar, Target, Check as CheckIcon } from "lucide-react"
 
@@ -214,6 +215,9 @@ export default function GoalsPage() {
 
   return (
     <div className="relative min-h-screen w-full bg-[#A4B870] overflow-hidden">
+      {/* Navbar */}
+      <Navbar />
+
       {/* Decorative background patterns */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
         <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
@@ -222,49 +226,45 @@ export default function GoalsPage() {
         <div className="absolute bottom-40 right-20 w-72 h-72 border-4 border-white rounded-full"></div>
       </div>
 
-      {/* Header */}
-      <header className="relative flex items-center justify-between px-6 py-6">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-        >
-          <span className="text-2xl w-10 h-10 border-2 border-white rounded-full flex items-center justify-center">
-            ←
-          </span>
-          <span className="text-xl font-semibold">Goals</span>
-        </button>
+      {/* Main Content with sidebar offset */}
+      <div className="md:ml-20">
+        {/* Header */}
+        <header className="relative flex items-center justify-between px-6 py-6">
 
-        <div className="flex items-center gap-3">
-          {filter === 'today' && (
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => {
-                setDueDate(e.target.value)
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold text-white">Goals</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            {filter === 'today' && (
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => {
+                  setDueDate(e.target.value)
+                  if (typeof window !== 'undefined') {
+                    window.localStorage.setItem('goals_selected_day', e.target.value)
+                  }
+                }}
+                className="px-3 py-2 rounded-full bg-white/20 text-white placeholder:text-white/70 border border-white/30 focus:outline-none"
+              />
+            )}
+            <button
+              onClick={() => {
+                const next = filter === 'today' ? 'all' : 'today'
+                setFilter(next)
                 if (typeof window !== 'undefined') {
-                  window.localStorage.setItem('goals_selected_day', e.target.value)
+                  window.localStorage.setItem('goals_filter', next)
                 }
               }}
-              className="px-3 py-2 rounded-full bg-white/20 text-white placeholder:text-white/70 border border-white/30 focus:outline-none"
-            />
-          )}
-          <button
-            onClick={() => {
-              const next = filter === 'today' ? 'all' : 'today'
-              setFilter(next)
-              if (typeof window !== 'undefined') {
-                window.localStorage.setItem('goals_filter', next)
-              }
-            }}
-            className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium rounded-full transition-colors"
-          >
-            {filter.toUpperCase()}
-          </button>
-        </div>
-      </header>
+              className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium rounded-full transition-colors"
+            >
+              {filter.toUpperCase()}
+            </button>
+          </div>
+        </header>
 
-      {/* Main content */}
-      <main className="relative flex flex-col items-center justify-center px-8 pb-8 min-h-[calc(100vh-100px)]">
+        {/* Main content */}
+        <main className="relative flex flex-col items-center justify-center px-8 pb-8 min-h-[calc(100vh-100px)]">
         {goals.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center text-center">
             <h1 className="text-3xl font-bold text-white mb-2">
@@ -315,22 +315,30 @@ export default function GoalsPage() {
                         <Target className="w-6 h-6 text-[#6E8450]" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-gray-800 mb-1">
+                        <h3 className="font-semibold text-lg text-gray-800 mb-2">
                           {goal.name}
                         </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Calendar className="w-4 h-4" />
-                          <span>{/^\d{4}-\d{2}-\d{2}$/.test(goal.target) ? new Date(goal.target).toLocaleDateString() : goal.target}</span>
-                        </div>
-                        <div className="mt-2">
-                          <span className={`text-xs px-3 py-1 rounded-full ${
-                            goal.progress === 'Completed' 
-                              ? 'bg-green-100 text-green-700'
-                              : goal.progress === 'In Progress'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {goal.progress}
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span className="font-medium text-gray-600">
+                            {(() => {
+                              if (goal.target === 'Indefinite') return 'Ongoing Goal'
+                              if (/^\d{4}-\d{2}-\d{2}$/.test(goal.target)) {
+                                const targetDate = new Date(goal.target)
+                                const today = new Date()
+                                today.setHours(0, 0, 0, 0)
+                                targetDate.setHours(0, 0, 0, 0)
+
+                                if (targetDate.getTime() === today.getTime()) {
+                                  return 'Due Today'
+                                } else if (targetDate < today) {
+                                  return `Overdue - ${targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                                } else {
+                                  return `Due ${targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                                }
+                              }
+                              return goal.target
+                            })()}
                           </span>
                         </div>
                       </div>
@@ -356,11 +364,18 @@ export default function GoalsPage() {
                   <h3 className="text-white text-lg font-semibold mb-3">Ongoing</h3>
                   <div className="space-y-3">
                     {goals.filter(g => g.progress !== 'Completed' && (!/^\d{4}-\d{2}-\d{2}$/.test(g.target) || new Date(g.target) >= new Date(new Date().toDateString()))).map(g => (
-                      <div key={g.id} className="bg-white/95 rounded-2xl p-4 shadow flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Target className="w-5 h-5 text-[#6E8450]" />
-                          <span className="text-gray-800 font-medium">{g.name}</span>
-                          <span className="text-sm text-gray-600">{/^\d{4}-\d{2}-\d{2}$/.test(g.target) ? new Date(g.target).toLocaleDateString() : g.target}</span>
+                      <div key={g.id} onClick={() => handleGoalClick(g)} className="bg-white/95 rounded-2xl p-4 shadow hover:shadow-lg transition-shadow cursor-pointer flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Target className="w-5 h-5 text-[#6E8450] flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-800 font-medium truncate">{g.name}</p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                              <span className="text-xs text-gray-600">
+                                {g.target === 'Indefinite' ? 'Ongoing' : /^\d{4}-\d{2}-\d{2}$/.test(g.target) ? `Due ${new Date(g.target).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : g.target}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                         <button onClick={(e) => handleDeleteClick(e, g)} title="Mark as completed" aria-label="Mark as completed" className="ml-4 w-8 h-8 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center transition-colors flex-shrink-0">
                           <CheckIcon className="w-5 h-5 text-white" strokeWidth={3} />
@@ -375,11 +390,18 @@ export default function GoalsPage() {
                   <h3 className="text-white text-lg font-semibold mb-3">Overdue</h3>
                   <div className="space-y-3">
                     {goals.filter(g => g.progress !== 'Completed' && /^\d{4}-\d{2}-\d{2}$/.test(g.target) && new Date(g.target) < new Date(new Date().toDateString())).map(g => (
-                      <div key={g.id} className="bg-white/95 rounded-2xl p-4 shadow flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Target className="w-5 h-5 text-[#6E8450]" />
-                          <span className="text-gray-800 font-medium">{g.name}</span>
-                          <span className="text-sm text-gray-600">{new Date(g.target).toLocaleDateString()}</span>
+                      <div key={g.id} onClick={() => handleGoalClick(g)} className="bg-red-50 border-l-4 border-red-400 rounded-2xl p-4 shadow hover:shadow-lg transition-shadow cursor-pointer flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Target className="w-5 h-5 text-red-600 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-800 font-medium truncate">{g.name}</p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <Calendar className="w-3.5 h-3.5 text-red-400" />
+                              <span className="text-xs font-medium text-red-600">
+                                Overdue - {new Date(g.target).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                         <button onClick={(e) => handleDeleteClick(e, g)} title="Mark as completed" aria-label="Mark as completed" className="ml-4 w-8 h-8 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center transition-colors flex-shrink-0">
                           <CheckIcon className="w-5 h-5 text-white" strokeWidth={3} />
@@ -394,11 +416,15 @@ export default function GoalsPage() {
                   <h3 className="text-white text-lg font-semibold mb-3">Completed</h3>
                   <div className="space-y-3">
                     {goals.filter(g => g.progress === 'Completed').map(g => (
-                      <div key={g.id} className="bg-white/95 rounded-2xl p-4 shadow flex items-center justify-between">
+                      <div key={g.id} className="bg-white/70 rounded-2xl p-4 shadow opacity-75">
                         <div className="flex items-center gap-3">
-                          <Target className="w-5 h-5 text-[#6E8450]" />
-                          <span className="text-gray-800 font-medium">{g.name}</span>
-                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Completed</span>
+                          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                            <CheckIcon className="w-5 h-5 text-green-600" strokeWidth={3} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-700 font-medium line-through truncate">{g.name}</p>
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 inline-block mt-1">Completed</span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -419,7 +445,8 @@ export default function GoalsPage() {
             </div>
           </div>
         )}
-      </main>
+        </main>
+      </div>
 
       {/* Update Confirmation Modal */}
       {showUpdateConfirm && (

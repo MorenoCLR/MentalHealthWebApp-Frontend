@@ -54,7 +54,8 @@ type Article = {
 
 type Suggestion = {
   id: string
-  message?: string
+  title: string
+  description?: string
   [key: string]: unknown
 }
 
@@ -68,6 +69,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [greeting, setGreeting] = useState("Hope you are doing well on this day")
 
   const loadDashboard = useCallback(async () => {
     setLoading(true)
@@ -83,6 +85,39 @@ export default function DashboardPage() {
   useEffect(() => {
     loadDashboard()
   }, [loadDashboard])
+
+  useEffect(() => {
+    const greetings = [
+      "Hope you are doing well today!",
+      "Wishing you a wonderful day ahead!",
+      "Remember to take time for yourself.",
+      "You're doing great, keep it up!",
+      "Sending you positive vibes!",
+      "Every day is a fresh start.",
+      "Believe in yourself and all that you are.",
+      "Small steps lead to big changes.",
+      "Make today count!"
+    ]
+
+    const today = new Date().toISOString().split('T')[0]
+    const savedDate = localStorage.getItem('greetingDate')
+    const savedGreeting = localStorage.getItem('greetingMessage')
+
+    if (savedDate === today && savedGreeting) {
+      setGreeting(savedGreeting)
+    } else {
+      let newGreeting = greetings[Math.floor(Math.random() * greetings.length)]
+      // Ensure different greeting from yesterday if possible
+      if (savedGreeting && greetings.length > 1) {
+        while (newGreeting === savedGreeting) {
+          newGreeting = greetings[Math.floor(Math.random() * greetings.length)]
+        }
+      }
+      localStorage.setItem('greetingDate', today)
+      localStorage.setItem('greetingMessage', newGreeting)
+      setGreeting(newGreeting)
+    }
+  }, [])
 
   if (loading) {
     return (
@@ -113,7 +148,7 @@ export default function DashboardPage() {
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
               <span className="text-2xl">👋</span> Hi, {data?.user?.username || data?.user?.full_name || 'there'}!
             </h1>
-            <p className="mt-1 text-gray-600">Hope you are doing well on this day ~</p>
+            <p className="mt-1 text-gray-600">{greeting}</p>
           </div>
         </div>
 
@@ -151,19 +186,32 @@ export default function DashboardPage() {
                       <span className="text-xl">🎯</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 line-clamp-2 mb-1">
+                      <p className="text-sm font-semibold text-gray-800 line-clamp-2 mb-2">
                         {goal.name}
                       </p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">
-                          {/^\d{4}-\d{2}-\d{2}$/.test(goal.target) ? new Date(goal.target).toLocaleDateString() : goal.target}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          goal.progress === 'In Progress'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {goal.progress}
+                      <div className="flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-xs font-medium text-gray-600">
+                          {(() => {
+                            if (goal.target === 'Indefinite') return 'Ongoing'
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(goal.target)) {
+                              const targetDate = new Date(goal.target)
+                              const today = new Date()
+                              today.setHours(0, 0, 0, 0)
+                              targetDate.setHours(0, 0, 0, 0)
+
+                              if (targetDate.getTime() === today.getTime()) {
+                                return 'Due Today'
+                              } else if (targetDate < today) {
+                                return `Overdue (${targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`
+                              } else {
+                                return `Due ${targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                              }
+                            }
+                            return goal.target
+                          })()}
                         </span>
                       </div>
                     </div>
@@ -185,7 +233,7 @@ export default function DashboardPage() {
               onClick={() => router.push('/mood')}
               className="cursor-pointer rounded-3xl bg-[#A4B870] p-6 text-white shadow-lg hover:shadow-xl transition-shadow"
             >
-              <h3 className="text-sm font-medium opacity-90">Mood Check</h3>
+              <h3 className="text-sm font-semibold opacity-90">Mood Check</h3>
               <div className="mt-4 flex items-center justify-center">
                 <div className="text-6xl">{moodEmoji}</div>
               </div>
@@ -199,7 +247,7 @@ export default function DashboardPage() {
               onClick={() => router.push('/visualization')}
               className="cursor-pointer rounded-3xl bg-[#FF8C69] p-6 text-white shadow-lg hover:shadow-xl transition-shadow"
             >
-              <h3 className="text-sm font-medium opacity-90">Stress Level</h3>
+              <h3 className="text-sm font-semibold opacity-90">Stress Level</h3>
               <div className="mt-4">
                 <BarChart3 size={48} className="mx-auto" />
               </div>
@@ -214,8 +262,8 @@ export default function DashboardPage() {
               className="cursor-pointer rounded-3xl bg-gradient-to-br from-[#8B7355] to-[#6B5644] p-6 text-white shadow-lg hover:shadow-xl transition-shadow"
             >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium opacity-90">Journal</h3>
-                <span className="text-xs opacity-80">See all →</span>
+                <h3 className="text-sm font-semibold opacity-90">Journal</h3>
+                <span className="text-xs opacity-80 hover:underline">See all</span>
               </div>
               {(!data?.journals || data.journals.length === 0) ? (
                 <div className="flex items-center justify-center h-32">
@@ -245,52 +293,128 @@ export default function DashboardPage() {
         {/* Highlight and Relax Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Mood Highlight */}
-          <div className="rounded-3xl bg-white p-6 shadow-lg">
+          <div
+            onClick={() => router.push('/visualization')}
+            className="rounded-3xl bg-white p-6 shadow-lg cursor-pointer hover:shadow-xl transition-shadow group"
+          >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-700">Mood Highlight</h3>
-              <span className="text-lg">✓</span>
+              <span className="text-sm text-gray-400 group-hover:text-[#A4B870] transition-colors">View Details →</span>
             </div>
-            
+
+            {/* Color Legend */}
+            {data?.weeklyMoods?.length ? (
+              <div className="flex items-center gap-3 mb-3 text-[10px]">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-[#A4B870]"></div>
+                  <span className="text-gray-500">Good</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-[#E5D68A]"></div>
+                  <span className="text-gray-500">Okay</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-[#FF8C69]"></div>
+                  <span className="text-gray-500">Low</span>
+                </div>
+              </div>
+            ) : null}
+
             {/* Mini Chart */}
-            <div className="mb-4 h-20 bg-gray-50 rounded-lg p-2 flex items-end justify-between gap-1">
+            <div className="mb-3 h-28 bg-gray-50 rounded-2xl p-4 pt-2">
               {data?.weeklyMoods?.length ? (
-                data.weeklyMoods.slice(0, 7).map((mood, index) => {
-                  const getBarColor = (rating: number) => {
-                    if (rating >= 4) return '#A4B870'
-                    if (rating === 3) return '#A67C52'
-                    return '#FF8C69'
-                  }
-                  const getBarHeight = (rating: number) => {
-                    return (rating / 5) * 100
-                  }
-                  return (
-                    <div
-                      key={mood.id}
-                      className="flex-1 rounded-t-sm transition-all duration-300 hover:opacity-80"
-                      style={{
-                        backgroundColor: getBarColor(mood.mood_rating),
-                        height: `${getBarHeight(mood.mood_rating)}%`,
-                        minHeight: '4px'
-                      }}
-                      title={`Mood: ${mood.mood_rating}/5`}
-                    ></div>
-                  )
-                })
+                <>
+                  <div className="h-full flex items-end justify-between gap-1.5">
+                    {data.weeklyMoods.slice(0, 7).map((mood, index) => {
+                      const getBarColor = (rating: number) => {
+                        if (rating >= 4) return '#A4B870'
+                        if (rating === 3) return '#E5D68A'
+                        return '#FF8C69'
+                      }
+                      const getBarHeight = (rating: number) => {
+                        return (rating / 5) * 100
+                      }
+                      return (
+                        <div key={mood.id} className="flex-1 flex flex-col items-center h-full justify-end group/bar relative">
+                          {/* Tooltip */}
+                          <div className="opacity-0 group-hover/bar:opacity-100 absolute bottom-full mb-1 bg-gray-800 text-white text-[10px] px-2 py-1 rounded transition-opacity whitespace-nowrap pointer-events-none z-10">
+                            {new Date(mood.mood_at).toLocaleDateString(undefined, { weekday: 'short' })}: {mood.mood_rating}/5
+                          </div>
+
+                          {/* Bar */}
+                          <div
+                            className="w-3 md:w-4 rounded-full transition-all duration-300 group-hover/bar:opacity-80 mb-1"
+                            style={{
+                              backgroundColor: getBarColor(mood.mood_rating),
+                              height: `${getBarHeight(mood.mood_rating)}%`,
+                              minHeight: '8px'
+                            }}
+                          ></div>
+
+                          {/* Day Label */}
+                          <span className="text-[9px] text-gray-400 font-medium">
+                            {new Date(mood.mood_at).toLocaleDateString('en-US', { weekday: 'short' }).charAt(0)}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
               ) : (
-                <p className="w-full text-center text-xs text-gray-400">No mood data</p>
+                <div className="w-full h-full flex flex-col items-center justify-center">
+                  <p className="text-sm text-gray-400 mb-3">No mood data yet</p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push('/mood')
+                    }}
+                    className="text-xs px-4 py-2 bg-[#A4B870] text-white rounded-full hover:bg-[#6E8450] transition-colors"
+                  >
+                    Track Your Mood
+                  </button>
+                </div>
               )}
             </div>
 
-            {/* Legend and Info */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E5D68A]">
-                <span className="text-sm">📊</span>
+            {/* Insights */}
+            {data?.weeklyMoods?.length ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#A4B870]/20">
+                    <span className="text-lg">
+                      {(() => {
+                        const avg = data.weeklyMoods.reduce((sum, m) => sum + m.mood_rating, 0) / data.weeklyMoods.length
+                        if (avg >= 4) return '😊'
+                        if (avg >= 3) return '😐'
+                        return '😰'
+                      })()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Average Mood</p>
+                    <p className="font-bold text-gray-800">
+                      {(data.weeklyMoods.reduce((sum, m) => sum + m.mood_rating, 0) / data.weeklyMoods.length).toFixed(1)}/5
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Trend</p>
+                  <p className="font-semibold text-gray-800">
+                    {(() => {
+                      if (data.weeklyMoods.length < 2) return '—'
+                      const firstHalf = data.weeklyMoods.slice(0, Math.ceil(data.weeklyMoods.length / 2))
+                      const secondHalf = data.weeklyMoods.slice(Math.ceil(data.weeklyMoods.length / 2))
+                      const firstAvg = firstHalf.reduce((sum, m) => sum + m.mood_rating, 0) / firstHalf.length
+                      const secondAvg = secondHalf.reduce((sum, m) => sum + m.mood_rating, 0) / secondHalf.length
+                      const diff = secondAvg - firstAvg
+                      if (diff > 0.3) return '↑ Improving'
+                      if (diff < -0.3) return '↓ Declining'
+                      return '→ Stable'
+                    })()}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-gray-500">Last 7 Days</p>
-                <p className="font-medium text-gray-800">Mood Trend</p>
-              </div>
-            </div>
+            ) : null}
           </div>
 
           {/* Relaxation Suggestions - Right Column */}
@@ -303,36 +427,45 @@ export default function DashboardPage() {
               className="cursor-pointer rounded-3xl bg-gradient-to-br from-[#6E8450] to-[#4A5A35] p-6 text-white shadow-lg hover:shadow-xl transition-shadow"
             >
               <div className="space-y-3">
-                <div className="rounded-2xl bg-white/10 p-4 hover:bg-white/15 transition-colors">
-                  <p className="text-lg font-bold">Walking</p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-4 hover:bg-white/15 transition-colors">
-                  <p className="text-lg font-bold">Yoga</p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-4 hover:bg-white/15 transition-colors">
-                  <p className="text-lg font-bold">Reading</p>
-                </div>
+                {data?.suggestions && data.suggestions.length > 0 ? (
+                  data.suggestions.map((suggestion) => (
+                    <div key={suggestion.id} className="rounded-2xl bg-white/10 p-4 hover:bg-white/15 transition-colors">
+                      <p className="text-lg font-bold">{suggestion.title}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <p className="text-white/70">No suggestions available</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
         {/* Other Features Row - Physical Health Cards */}
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold text-gray-800">Physical Health</h2>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+
           {/* Physical Health */}
-          <div className="rounded-3xl bg-white p-6 shadow-lg">
+          <div 
+            onClick={() => router.push('/physical-health')}
+            className="cursor-pointer rounded-3xl bg-white p-6 shadow-lg hover:shadow-xl transition-shadow"
+          >
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700">Physical Health</h3>
-              <span className="text-lg">✓</span>
+              <h3 className="text-sm font-semibold text-gray-700">Step Counts</h3>
+              <ChevronRight size={16} className="text-gray-400" />
             </div>
             <div className="mt-4 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#A4B870]">
                 <Activity size={24} className="text-white" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Step Counts</p>
-                <p className="font-medium text-gray-800">
-                  {data?.physicalHealth?.stepCounts ?? '-'} steps
+                <p className="text-2xl font-bold text-gray-800">
+                  {data?.physicalHealth?.stepCounts ?? '-'} <span className="text-sm font-normal text-gray-500">steps</span>
                 </p>
               </div>
             </div>
@@ -352,9 +485,8 @@ export default function DashboardPage() {
                 <Moon size={24} className="text-white" />
               </div>
               <div>
-                <p className="text-xs text-gray-500">Sleep Hours</p>
-                <p className="font-medium text-gray-800">
-                  {data?.physicalHealth?.sleepHours ?? '-'} hours
+                <p className="text-2xl font-bold text-gray-800">
+                  {data?.physicalHealth?.sleepHours ?? '-'} <span className="text-sm font-normal text-gray-500">Hours</span>
                 </p>
               </div>
             </div>
@@ -367,6 +499,7 @@ export default function DashboardPage() {
           >
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-700">Weight</h3>
+              <ChevronRight size={16} className="text-gray-400" />
             </div>
             <div className="mt-4 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9CA3AF]">

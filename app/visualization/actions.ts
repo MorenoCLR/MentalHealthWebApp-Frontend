@@ -160,11 +160,34 @@ export async function getUserProfile() {
 
   if (error) {
     console.error('Error fetching user profile:', error)
-    return { username: 'User', full_name: null }
+    return { username: 'User', full_name: null, physicalHealth: null }
+  }
+
+  // Fetch latest physical health data for weight/height
+  const { data: physicalData } = await supabase
+    .from('physical_health')
+    .select('complaints')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  let physicalStats = null
+  if (physicalData?.complaints) {
+    try {
+      const parsed = JSON.parse(physicalData.complaints)
+      physicalStats = {
+        weight: parsed.weight,
+        height: parsed.height // Assuming height is stored here too, or undefined
+      }
+    } catch (e) {
+      console.error('Error parsing physical health data:', e)
+    }
   }
 
   return {
     username: data?.username || 'User',
-    full_name: data?.full_name || null
+    full_name: data?.full_name || null,
+    physicalHealth: physicalStats
   }
 }

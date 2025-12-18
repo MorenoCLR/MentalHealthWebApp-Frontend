@@ -4,15 +4,14 @@ import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import { getJournals, createJournal, updateJournal, deleteJournal, type JournalEntry } from "./actions"
-import { PenSquare, Home, Settings, Plus, Trash2 } from "lucide-react"
+import { PenSquare, Plus, Trash2, Save } from "lucide-react"
 
 export default function JournalPage() {
   const router = useRouter()
   const [journals, setJournals] = useState<JournalEntry[]>([])
   const [selectedJournal, setSelectedJournal] = useState<JournalEntry | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [editingJournal, setEditingJournal] = useState<JournalEntry | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
 
   // Form states
   const [title, setTitle] = useState("")
@@ -23,6 +22,15 @@ export default function JournalPage() {
   useEffect(() => {
     loadJournals()
   }, [])
+
+  useEffect(() => {
+    if (selectedJournal) {
+      setTitle(selectedJournal.title)
+      setContent(selectedJournal.content || "")
+      setIsCreating(false)
+      setErrors({})
+    }
+  }, [selectedJournal])
 
   const loadJournals = async () => {
     setLoading(true)
@@ -37,25 +45,16 @@ export default function JournalPage() {
   }
 
   const handleCreateNew = () => {
-    setEditingJournal(null)
+    setSelectedJournal(null)
+    setIsCreating(true)
     setTitle("")
     setContent("")
     setErrors({})
-    setShowModal(true)
   }
 
   const handleJournalClick = (journal: JournalEntry) => {
     setSelectedJournal(journal)
-  }
-
-  const handleEditTitle = () => {
-    if (selectedJournal) {
-      setEditingJournal(selectedJournal)
-      setTitle(selectedJournal.title)
-      setContent(selectedJournal.content || "")
-      setErrors({})
-      setShowModal(true)
-    }
+    setIsCreating(false)
   }
 
   const handleSave = async () => {
@@ -72,8 +71,8 @@ export default function JournalPage() {
       formData.append('content', content)
 
       let result
-      if (editingJournal) {
-        formData.append('id', editingJournal.id)
+      if (selectedJournal && !isCreating) {
+        formData.append('id', selectedJournal.id)
         result = await updateJournal(formData)
       } else {
         result = await createJournal(formData)
@@ -82,8 +81,18 @@ export default function JournalPage() {
       if (result?.error) {
         setErrors({ title: result.error })
       } else {
-        setShowModal(false)
-        await loadJournals()
+        const updatedJournals = await getJournals()
+        if (updatedJournals.data) {
+          setJournals(updatedJournals.data)
+          if (isCreating && result?.data) {
+             setSelectedJournal(result.data)
+             setIsCreating(false)
+          } else if (selectedJournal) {
+             // Refresh selected journal data to ensure sync
+             const updated = updatedJournals.data.find(j => j.id === selectedJournal.id)
+             if (updated) setSelectedJournal(updated)
+          }
+        }
       }
     } catch (err) {
       console.error(err)
@@ -111,215 +120,168 @@ export default function JournalPage() {
   }
 
   return (
-    <div className="flex h-screen bg-[#A4B870] overflow-hidden">
-      {/* Decorative background patterns */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-5">
-        <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
-        <div className="absolute top-40 right-32 w-96 h-96 border-4 border-white rounded-full"></div>
-        <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
-      </div>
+    <div className="flex h-screen bg-[#F5F5F0]">
+      {/* Shared Navbar */}
+      <Navbar />
 
-      {/* Sidebar */}
-      <aside className="relative w-80 bg-[#8FA05E] p-6 flex flex-col shadow-2xl">
-        {/* New Journal Button */}
-        <button
-          onClick={handleCreateNew}
-          className="flex items-center gap-3 px-4 py-3 bg-[#6E8450] hover:bg-[#5d7043] text-white rounded-lg mb-6 transition-colors shadow-md"
-        >
-          <PenSquare className="w-5 h-5" />
-          <span className="font-medium">Journaling</span>
-        </button>
+      {/* Main Content Area (offset by Navbar width on desktop) */}
+      <div className="flex-1 flex md:ml-20 h-full overflow-hidden">
+        
+        {/* Journal List Sidebar */}
+        <aside className="w-80 bg-[#8FA05E] p-6 flex flex-col shadow-xl z-10 h-full">
+          {/* New Journal Button */}
+          <button
+            onClick={handleCreateNew}
+            className="flex items-center gap-3 px-4 py-3 bg-[#6E8450] hover:bg-[#5d7043] text-white rounded-lg mb-6 transition-colors shadow-md w-full justify-center"
+          >
+            <PenSquare className="w-5 h-5" />
+            <span className="font-medium">New Journal</span>
+          </button>
 
-        {/* Journal List Header */}
-        <div className="flex items-center justify-between mb-4 px-2">
-          <h2 className="text-white font-semibold text-sm">Journaling</h2>
-          <span className="text-white/70 text-xs">😊</span>
-        </div>
+          {/* Journal List Header */}
+          <div className="flex items-center justify-between mb-4 px-2">
+            <h2 className="text-white font-semibold text-sm">Your Entries</h2>
+            <span className="text-white/70 text-xs">😊</span>
+          </div>
 
-        {/* Journal List */}
-        <div className="flex-1 overflow-y-auto space-y-2 mb-6">
-          {loading ? (
-            <p className="text-white/60 text-sm text-center py-8">Loading...</p>
-          ) : journals.length === 0 ? (
-            <p className="text-white/60 text-sm text-center py-8">No journal entries yet</p>
-          ) : (
-            journals.map((journal, index) => (
-              <button
-                key={journal.id}
-                onClick={() => handleJournalClick(journal)}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                  selectedJournal?.id === journal.id
-                    ? 'bg-[#A4B870] text-white shadow-md'
-                    : 'bg-[#9FAA6D] hover:bg-[#A4B870] text-white/90'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{journal.title}</div>
-                    <div className="text-xs text-white/70 mt-1">
-                      {formatDate(journal.date_created)}
+          {/* Journal List */}
+          <div className="flex-1 overflow-y-auto space-y-2 mb-6 pr-2 custom-scrollbar">
+            {loading ? (
+              <p className="text-white/60 text-sm text-center py-8">Loading...</p>
+            ) : journals.length === 0 ? (
+              <p className="text-white/60 text-sm text-center py-8">No journal entries yet</p>
+            ) : (
+              journals.map((journal) => (
+                <button
+                  key={journal.id}
+                  onClick={() => handleJournalClick(journal)}
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
+                    selectedJournal?.id === journal.id
+                      ? 'bg-[#A4B870] text-white shadow-md translate-x-1'
+                      : 'bg-[#9FAA6D] hover:bg-[#A4B870] text-white/90 hover:translate-x-1'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{journal.title}</div>
+                      <div className="text-xs text-white/70 mt-1">
+                        {formatDate(journal.date_created)}
+                      </div>
                     </div>
+                    {selectedJournal?.id === journal.id && (
+                      <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-white flex-shrink-0 ml-2">
+                        <Plus className="w-3 h-3" />
+                      </div>
+                    )}
                   </div>
-                  <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#6E8450] flex-shrink-0 ml-3">
-                    <Plus className="w-4 h-4" />
-                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </aside>
+
+        {/* Editor / Content Area */}
+        <main className="flex-1 bg-[#A4B870] relative overflow-hidden flex flex-col">
+          {/* Decorative background patterns */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
+            <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
+            <div className="absolute top-40 right-32 w-96 h-96 border-4 border-white rounded-full"></div>
+            <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
+          </div>
+
+          {selectedJournal || isCreating ? (
+            <div className="h-full flex flex-col relative z-10">
+              {/* Header */}
+              <header className="bg-white/10 backdrop-blur-sm px-8 py-6 flex items-center justify-between border-b border-white/10">
+                <div className="text-white/90 font-medium text-lg flex items-center gap-2">
+                  <span className="bg-white/20 p-2 rounded-lg"><PenSquare size={20}/></span>
+                  {isCreating 
+                    ? "New Entry" 
+                    : `Entry ${getJournalNumber(journals.findIndex(j => j.id === selectedJournal!.id))}`
+                  }
                 </div>
-              </button>
-            ))
-          )}
-        </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleSave}
+                    disabled={submitting}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-white font-medium disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    Save
+                  </button>
+                  {!isCreating && (
+                    <button
+                      onClick={handleDelete}
+                      className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-lg transition-colors text-white"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </header>
 
-        {/* Bottom Navigation */}
-        <div className="space-y-2">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors w-full"
-          >
-            <Home className="w-5 h-5" />
-            <span className="font-medium">Home</span>
-          </button>
-          <button
-            onClick={() => router.push('/settings')}
-            className="flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors w-full"
-          >
-            <Settings className="w-5 h-5" />
-            <span className="font-medium">Settings</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 relative overflow-hidden">
-        {selectedJournal ? (
-          <div className="h-full flex flex-col">
-            {/* Header */}
-            <header className="bg-white/10 backdrop-blur-sm px-8 py-6 flex items-center justify-between">
-              <button
-                onClick={() => router.back()}
-                className="text-white/80 hover:text-white flex items-center gap-2"
-              >
-                <span className="text-xl">←</span>
-                <span>Journal {getJournalNumber(journals.findIndex(j => j.id === selectedJournal.id))}</span>
-              </button>
-              <button
-                onClick={handleDelete}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-5 h-5 text-white/80 hover:text-red-300" />
-              </button>
-            </header>
-
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-8">
-              <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl min-h-full">
-                {/* Title Section */}
-                <div className="border-b border-gray-200 p-8">
-                  <div className="flex items-center justify-between mb-2">
+              {/* Content Editor */}
+              <div className="flex-1 overflow-y-auto p-8">
+                <div className="max-w-4xl mx-auto bg-white/95 backdrop-blur rounded-3xl shadow-2xl min-h-full flex flex-col">
+                  {/* Title Section */}
+                  <div className="border-b border-gray-100 p-8 pb-4">
                     <input
                       type="text"
-                      value={selectedJournal.title}
-                      readOnly
-                      onClick={handleEditTitle}
-                      className="text-2xl font-semibold text-gray-800 bg-transparent border-none outline-none cursor-pointer hover:text-[#6E8450] w-full"
-                      placeholder="Untitled"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className={`text-3xl font-bold text-gray-800 bg-transparent border-none outline-none w-full placeholder:text-gray-300 focus:ring-0 ${
+                        errors.title ? 'text-red-600' : ''
+                      }`}
+                      placeholder="Title your entry..."
+                    />
+                    {errors.title && (
+                      <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+                    )}
+                    <p className="text-sm text-[#6E8450] font-medium mt-2 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#6E8450]"></span>
+                      {isCreating 
+                        ? new Date().toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })
+                        : new Date(selectedJournal!.date_created).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })
+                      }
+                    </p>
+                  </div>
+
+                  {/* Text Area */}
+                  <div className="p-8 flex-1">
+                    <textarea
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      className="w-full h-full text-lg text-gray-600 bg-transparent border-none outline-none resize-none placeholder:text-gray-300 focus:ring-0 leading-relaxed"
+                      placeholder="What's on your mind today?"
                     />
                   </div>
-                  <p className="text-sm text-gray-500">
-                    {new Date(selectedJournal.date_created).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </p>
-                </div>
-
-                {/* Content Section */}
-                <div className="p-8">
-                  <textarea
-                    value={selectedJournal.content || ""}
-                    readOnly
-                    onClick={handleEditTitle}
-                    className="w-full h-96 text-gray-700 bg-transparent border-none outline-none resize-none cursor-pointer hover:text-gray-900"
-                    placeholder="Start writing your thoughts..."
-                  />
                 </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center text-white/60">
-              <PenSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-xl">Select a journal entry or create a new one</p>
+          ) : (
+            <div className="h-full flex items-center justify-center relative z-10">
+              <div className="text-center text-white/60">
+                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <PenSquare className="w-10 h-10" />
+                </div>
+                <h3 className="text-2xl font-semibold text-white mb-2">Select an entry</h3>
+                <p className="text-white/70">Choose a journal from the sidebar or create a new one.</p>
+              </div>
             </div>
-          </div>
-        )}
-      </main>
-
-      {/* Create/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-8">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-              {editingJournal ? 'Edit Entry' : 'New Entry'}
-            </h2>
-
-            {/* Title Input */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Title
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value)
-                  if (errors.title) setErrors({ ...errors, title: undefined })
-                }}
-                placeholder="I am feeling sick today"
-                className={`w-full px-4 py-3 rounded-full border text-gray-800 placeholder:text-gray-400 ${
-                  errors.title ? 'border-red-400' : 'border-gray-200'
-                } focus:outline-none focus:ring-2 focus:ring-[#A4B870]/50`}
-              />
-              {errors.title && (
-                <p className="text-red-600 text-sm mt-2">{errors.title}</p>
-              )}
-            </div>
-
-            {/* Content Input */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Content
-              </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Write your thoughts..."
-                rows={6}
-                className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]/50 resize-none"
-              />
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-full font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={submitting}
-                className="flex-1 py-3 bg-[#A4B870] hover:bg-[#8FA05E] text-white rounded-full font-medium transition-colors disabled:opacity-50"
-              >
-                {submitting ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
+        </main>
+      </div>
     </div>
   )
 }

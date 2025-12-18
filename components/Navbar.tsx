@@ -15,16 +15,19 @@ type NavItem = {
   icon: React.ElementType
 }
 
-const navItems: NavItem[] = [
-  { name: "Dashboard", path: "/dashboard", icon: Home },
-  { name: "Mood Check", path: "/mood", icon: Smile },
+const mainNavItems: NavItem[] = [
   { name: "Journal", path: "/journal", icon: BookOpen },
-  { name: "Goals", path: "/goals", icon: Target },
-  { name: "Articles", path: "/articles", icon: FileText },
+  { name: "Dashboard", path: "/dashboard", icon: Home },
+  { name: "Settings", path: "/settings", icon: Settings },
+]
+
+const secondaryNavItems: NavItem[] = [
+  { name: "Mood Check", path: "/mood", icon: Smile },
   { name: "Relaxation", path: "/relaxation", icon: Leaf },
   { name: "Physical Health", path: "/physical-health", icon: Activity },
+  { name: "Articles", path: "/articles", icon: FileText },
+  { name: "Goals", path: "/goals", icon: Target },
   { name: "Visualization", path: "/visualization", icon: BarChart3 },
-  { name: "Settings", path: "/settings", icon: Settings },
 ]
 
 type NavbarProps = {
@@ -43,6 +46,37 @@ export default function Navbar({ className = "" }: NavbarProps) {
     router.replace("/login")
   }
 
+  const renderNavItems = (items: NavItem[]) => (
+    <div className="space-y-1">
+      {items.map((item) => {
+        const Icon = item.icon
+        const isActive = pathname === item.path || pathname?.startsWith(item.path + "/")
+        
+        return (
+          <button
+            key={item.path}
+            onClick={() => {
+              router.push(item.path)
+              setShowMobileMenu(false)
+            }}
+            className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 transition-all ${
+              isActive
+                ? "bg-white/20 text-white"
+                : "text-white/70 hover:bg-white/10 hover:text-white"
+            } ${!isExpanded && "md:justify-center"}`}
+            title={!isExpanded ? item.name : undefined}
+          >
+            <Icon size={20} className="flex-shrink-0" />
+            {/* Show text only on mobile or if expanded on desktop */}
+            <span className={`font-medium text-sm whitespace-nowrap ${!isExpanded ? "md:hidden" : ""}`}>
+              {item.name}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -52,7 +86,7 @@ export default function Navbar({ className = "" }: NavbarProps) {
         } ${className}`}
       >
         {/* Header */}
-        <div className="p-4 flex items-center justify-between border-b border-white/10">
+        <div className={`p-4 flex items-center border-b border-white/10 ${isExpanded ? "justify-between" : "justify-center"}`}>
           {isExpanded ? (
             <>
               <div className="flex items-center gap-3">
@@ -74,7 +108,7 @@ export default function Navbar({ className = "" }: NavbarProps) {
           ) : (
             <button
               onClick={() => setIsExpanded(true)}
-              className="mx-auto text-white/70 hover:text-white transition-colors"
+              className="text-white/70 hover:text-white transition-colors"
             >
               <ChevronRight size={20} />
             </button>
@@ -83,39 +117,18 @@ export default function Navbar({ className = "" }: NavbarProps) {
 
         {/* Navigation Items */}
         <nav className="flex-1 overflow-y-auto py-4 px-2">
-          <div className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.path || pathname?.startsWith(item.path + "/")
-              
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => router.push(item.path)}
-                  className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 transition-all ${
-                    isActive
-                      ? "bg-white/20 text-white"
-                      : "text-white/70 hover:bg-white/10 hover:text-white"
-                  }`}
-                  title={!isExpanded ? item.name : undefined}
-                >
-                  <Icon size={20} className="flex-shrink-0" />
-                  {isExpanded && (
-                    <span className="font-medium text-sm whitespace-nowrap">
-                      {item.name}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
+          {renderNavItems(mainNavItems)}
+          
+          <div className="my-2 border-t border-white/10" />
+          
+          {renderNavItems(secondaryNavItems)}
         </nav>
 
         {/* Footer */}
         <div className="border-t border-white/10 p-2">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-white/70 hover:bg-white/10 hover:text-white transition-all"
+            className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-white/70 hover:bg-white/10 hover:text-white transition-all ${!isExpanded && "justify-center"}`}
             title={!isExpanded ? "Logout" : undefined}
           >
             <LogOut size={20} className="flex-shrink-0" />
@@ -161,11 +174,11 @@ export default function Navbar({ className = "" }: NavbarProps) {
 
         {/* Navigation Items */}
         <nav className="flex-1 overflow-y-auto py-4 px-2">
+          {/* Reuse the helper but force expanded look for mobile (text always visible) */}
           <div className="space-y-1">
-            {navItems.map((item) => {
+            {[...mainNavItems, ...secondaryNavItems].map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.path || pathname?.startsWith(item.path + "/")
-              
               return (
                 <button
                   key={item.path}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Navbar from "@/components/Navbar"
 import { savePhysicalHealth, getLast7DaysPhysicalHealth } from "./actions"
 import { Plus, Check } from "lucide-react"
 
@@ -133,6 +134,9 @@ export default function PhysicalHealthPage() {
 
   return (
     <div className="relative min-h-screen w-full bg-[#A67C52] overflow-hidden">
+      {/* Navbar */}
+      <Navbar />
+
       {/* Decorative background patterns */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
         <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
@@ -140,19 +144,15 @@ export default function PhysicalHealthPage() {
         <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
       </div>
 
-      {/* Back button */}
-      <button
-        onClick={() => router.back()}
-        className="absolute top-6 left-6 flex items-center gap-2 text-white/90 hover:text-white transition-colors z-10"
-      >
-        <span className="text-2xl w-10 h-10 border-2 border-white rounded-full flex items-center justify-center">
-          ←
-        </span>
-        <span className="text-sm font-medium">Physical Health Logging</span>
-      </button>
+      {/* Main content with sidebar offset */}
+      <div className="md:ml-20">
+        {/* Page Header */}
+        <header className="relative flex items-center justify-between px-6 py-6">
+          <h1 className="text-2xl font-semibold text-white">Physical Health</h1>
+        </header>
 
-      {/* Main content */}
-      <main className="flex min-h-screen w-full flex-col items-center justify-center px-8 py-8">
+        {/* Main content */}
+        <main className="flex min-h-[calc(100vh-100px)] w-full flex-col items-center justify-center px-8 py-8">
         {!showHistory ? (
           // Physical Health Logging Section
           <div className="w-full max-w-md text-center">
@@ -328,6 +328,8 @@ export default function PhysicalHealthPage() {
             </button>
           </div>
         )}
-      </main>    </div>
+        </main>
+      </div>
+    </div>
   )
 }

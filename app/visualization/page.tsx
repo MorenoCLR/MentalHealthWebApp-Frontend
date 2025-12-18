@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import { getMoodVisualization, getUserProfile, type MoodData, type MoodStats, type WeeklyMood } from "./actions"
-import { RefreshCw, MoreVertical } from "lucide-react"
+import { RefreshCw, MoreVertical, Weight, Activity } from "lucide-react"
 
 export default function VisualizationPage() {
   const router = useRouter()
@@ -16,7 +16,7 @@ export default function VisualizationPage() {
   const [stats, setStats] = useState<MoodStats | null>(null)
   const [weeklyMoods, setWeeklyMoods] = useState<WeeklyMood[]>([])
   const [username, setUsername] = useState<string | null>(null)
-  const [userStats] = useState("60 kg | 170 cm")
+  const [physicalStats, setPhysicalStats] = useState<{ weight?: number, height?: number } | null>(null)
 
   useEffect(() => {
     loadData()
@@ -42,6 +42,10 @@ export default function VisualizationPage() {
 
       if (profileResult.username) {
         setUsername(profileResult.full_name || profileResult.username)
+      }
+      
+      if (profileResult.physicalHealth) {
+        setPhysicalStats(profileResult.physicalHealth)
       }
     } catch (err) {
       console.error(err)
@@ -80,6 +84,9 @@ export default function VisualizationPage() {
 
   return (
     <div className="relative min-h-screen w-full bg-[#A4B870] overflow-hidden pb-8">
+      {/* Navbar */}
+      <Navbar />
+
       {/* Decorative background patterns */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
         <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
@@ -87,28 +94,45 @@ export default function VisualizationPage() {
         <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
       </div>
 
-      {/* Back button */}
-      <button
-        onClick={() => router.back()}
-        className="absolute top-6 left-6 w-10 h-10 border-2 border-white/50 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:border-white transition-colors z-10"
-      >
-        ←
-      </button>
+      {/* Main content with sidebar offset */}
+      <div className="md:ml-20">
+        {/* Page Header */}
+        <header className="relative flex items-center justify-between px-6 py-6">
+          <h1 className="text-2xl font-semibold text-white">Visualization</h1>
+        </header>
 
-      {/* Main content */}
-      <main className="relative px-6 pt-20">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Mood Data Visualization
-            </h1>
-            <h2 className="text-2xl font-semibold text-[#6E8450] mb-1">
-              {username}
-            </h2>
-            <p className="text-white/80 text-sm">
-              {userStats}
-            </p>
+        {/* Main content */}
+        <main className="relative px-6 pt-4">
+          <div className="max-w-2xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-white mb-2">
+                Mood Data Visualization
+              </h2>
+              <p className="text-xl font-semibold text-[#6E8450] mb-3">
+                {username}
+              </p>
+            
+            {/* Dynamic Physical Stats Badge */}
+            {physicalStats && (physicalStats.weight || physicalStats.height) && (
+              <div className="inline-flex items-center gap-3 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-white text-sm font-medium">
+                {physicalStats.weight && (
+                  <div className="flex items-center gap-1.5">
+                    <Weight size={14} />
+                    <span>{physicalStats.weight} kg</span>
+                  </div>
+                )}
+                {physicalStats.weight && physicalStats.height && (
+                  <span className="w-1 h-1 bg-white/60 rounded-full" />
+                )}
+                {physicalStats.height && (
+                  <div className="flex items-center gap-1.5">
+                    <Activity size={14} />
+                    <span>{physicalStats.height} cm</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Chart Card */}
@@ -116,12 +140,16 @@ export default function VisualizationPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#A4B870]"></div>
-                  <span className="text-gray-600">Positive</span>
+                  <div className="w-3 h-3 rounded-full bg-[#FF8C69]"></div>
+                  <span className="text-gray-600">Bad (1-2)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#FF8C69]"></div>
-                  <span className="text-gray-600">Negative</span>
+                  <div className="w-3 h-3 rounded-full bg-[#E5D68A]"></div>
+                  <span className="text-gray-600">Neutral (3)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#A4B870]"></div>
+                  <span className="text-gray-600">Good (4-5)</span>
                 </div>
               </div>
               <button
@@ -167,20 +195,27 @@ export default function VisualizationPage() {
                   <p className="text-gray-400">No mood data available</p>
                 </div>
               ) : (
-                <div className="h-full bg-gray-50 rounded-lg p-4 flex items-end justify-between gap-2">
+                <div className="h-full bg-gray-50 rounded-2xl p-4 flex items-end justify-between gap-1 overflow-x-auto">
                   {moodData.map((mood, index) => (
-                    <div key={mood.id} className="flex-1 flex flex-col items-center gap-2">
+                    <div key={mood.id} className="flex-1 min-w-[20px] flex flex-col items-center justify-end h-full gap-2 group">
+                      {/* Tooltip on hover */}
+                      <div className="opacity-0 group-hover:opacity-100 absolute bottom-full mb-2 bg-gray-800 text-white text-xs px-2 py-1 rounded transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                        {new Date(mood.mood_at).toLocaleDateString()} - Rating: {mood.mood_rating}
+                      </div>
+                      
                       <div
-                        className="w-full rounded-t-lg transition-all duration-300 hover:opacity-80 shadow-sm"
+                        className="w-2 md:w-3 rounded-full transition-all duration-300 hover:opacity-80 shadow-sm"
                         style={{
-                          backgroundColor: getBarColor(mood.mood_rating),
-                          height: getBarHeight(mood.mood_rating),
+                          backgroundColor: mood.mood_rating >= 4 ? '#A4B870' : mood.mood_rating === 3 ? '#E5D68A' : '#FF8C69',
+                          height: `${(mood.mood_rating / 5) * 100}%`,
                           minHeight: '8px'
                         }}
                       ></div>
-                      {(index === 0 || index === moodData.length - 1) && (
-                        <span className="text-xs text-gray-600 font-medium">
-                          {formatDateLabel(mood.mood_at, index, moodData.length)}
+                      
+                      {/* Date Label - show sparsely to avoid clutter */}
+                      {(index === 0 || index === moodData.length - 1 || index % Math.ceil(moodData.length / 5) === 0) && (
+                        <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap absolute bottom-1">
+                          {new Date(mood.mood_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}
                         </span>
                       )}
                     </div>
@@ -228,8 +263,9 @@ export default function VisualizationPage() {
               </div>
             </div>
           </div>
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

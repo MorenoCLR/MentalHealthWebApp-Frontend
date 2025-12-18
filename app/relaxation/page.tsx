@@ -52,6 +52,9 @@ export default function RelaxationPage() {
   if (loading) {
     return (
       <div className="relative min-h-screen w-full bg-[#A4B870] overflow-hidden">
+        {/* Navbar */}
+        <Navbar />
+
         {/* Decorative background patterns */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
           <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
@@ -59,16 +62,15 @@ export default function RelaxationPage() {
           <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
         </div>
 
-        {/* Back button */}
-        <button
-          onClick={() => router.back()}
-          className="absolute top-6 left-6 w-10 h-10 border-2 border-white/50 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:border-white transition-colors"
-        >
-          ←
-        </button>
+        {/* Main content with sidebar offset */}
+        <div className="md:ml-20">
+          {/* Page Header */}
+          <header className="relative flex items-center justify-between px-6 py-6">
+            <h1 className="text-2xl font-semibold text-white">Relaxation</h1>
+          </header>
 
-        {/* Loading content */}
-        <main className="relative flex flex-col items-center justify-center min-h-screen px-8 text-center">
+          {/* Loading content */}
+          <main className="relative flex flex-col items-center justify-center min-h-[calc(100vh-100px)] px-8 text-center">
           <h1 className="text-3xl font-bold text-white mb-12">
             Lets us find all relaxation that suits you
           </h1>
@@ -77,10 +79,11 @@ export default function RelaxationPage() {
             <div className="w-32 h-32 border-8 border-white/30 border-t-white rounded-full animate-spin"></div>
           </div>
 
-          <p className="text-xl text-white">
-            Please wait...
-          </p>
-        </main>
+            <p className="text-xl text-white">
+              Please wait...
+            </p>
+          </main>
+        </div>
       </div>
     )
   }
@@ -88,6 +91,9 @@ export default function RelaxationPage() {
   // Success state - Show activities
   return (
     <div className="relative min-h-screen w-full bg-[#A4B870] overflow-hidden pb-12">
+      {/* Navbar */}
+      <Navbar />
+
       {/* Decorative background patterns */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
         <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
@@ -95,20 +101,19 @@ export default function RelaxationPage() {
         <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
       </div>
 
-      {/* Back button */}
-      <button
-        onClick={() => router.push('/dashboard')}
-        className="absolute top-6 left-6 w-10 h-10 border-2 border-white/50 rounded-full flex items-center justify-center text-white/90 hover:text-white hover:border-white transition-colors z-10"
-      >
-        ←
-      </button>
+      {/* Main content with sidebar offset */}
+      <div className="md:ml-20">
+        {/* Page Header */}
+        <header className="relative flex items-center justify-between px-6 py-6">
+          <h1 className="text-2xl font-semibold text-white">Relaxation</h1>
+        </header>
 
-      {/* Main content */}
-      <main className="relative px-6 py-12">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-4xl font-bold text-white mb-6">
-            Here are the relaxation ideas for you
-          </h1>
+        {/* Main content */}
+        <main className="relative px-6 py-6">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-white mb-6">
+              Here are the relaxation ideas for you
+            </h2>
 
           {info && (
             <div className="mb-8 rounded-2xl bg-white/20 border border-white/30 text-white px-4 py-3">
@@ -144,13 +149,7 @@ export default function RelaxationPage() {
                 {/* Image */}
                 <div className="flex-1 h-64 bg-gray-200 relative overflow-hidden">
                   <img 
-                    src={
-                      activity.id === 'running-walking' 
-                        ? 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&h=600&fit=crop'
-                        : activity.id === 'yoga'
-                        ? 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&h=600&fit=crop'
-                        : 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=800&h=600&fit=crop'
-                    }
+                    src={activity.image}
                     alt={activity.title}
                     className="w-full h-full object-cover"
                   />
@@ -158,8 +157,9 @@ export default function RelaxationPage() {
               </div>
             ))}
           </div>
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

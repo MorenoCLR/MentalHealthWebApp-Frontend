@@ -43,6 +43,8 @@ type DashboardData = {
   }>
   suggestions: Array<{
     id: string
+    title: string
+    description: string
     [key: string]: unknown
   }>
   journals: Array<{
@@ -59,6 +61,78 @@ type DashboardData = {
   stressLevel: number
   goalsCount: number
 }
+
+// Copied from relaxation/actions.ts for consistency
+const RELAXATION_ACTIVITIES = [
+  // Low Mood Activities (1-2)
+  {
+    id: 'deep-breathing',
+    title: 'Deep Breathing',
+    description: 'When you are feeling low or overwhelmed, deep breathing can help ground you.',
+    minMood: 1,
+    maxMood: 2
+  },
+  {
+    id: 'gentle-stretching',
+    title: 'Gentle Stretching',
+    description: 'Release tension stored in your body with slow, gentle stretches.',
+    minMood: 1,
+    maxMood: 2
+  },
+  {
+    id: 'comfort-music',
+    title: 'Calming Music',
+    description: 'Listen to slow, ambient, or classical music to lower cortisol levels.',
+    minMood: 1,
+    maxMood: 2
+  },
+
+  // Neutral Mood Activities (3)
+  {
+    id: 'nature-walk',
+    title: 'Nature Walk',
+    description: 'A walk in nature helps clear the mind and provides a fresh perspective.',
+    minMood: 2,
+    maxMood: 4
+  },
+  {
+    id: 'reading',
+    title: 'Reading',
+    description: 'Reading helps relax the mind and shift focus away from daily pressure.',
+    minMood: 2,
+    maxMood: 4
+  },
+  {
+    id: 'mindful-tea',
+    title: 'Mindful Tea/Coffee',
+    description: 'Prepare a warm beverage and focus entirely on the experience.',
+    minMood: 3,
+    maxMood: 4
+  },
+
+  // High Mood Activities (4-5)
+  {
+    id: 'running-jogging',
+    title: 'Running / Jogging',
+    description: 'Channel your good energy into physical movement.',
+    minMood: 4,
+    maxMood: 5
+  },
+  {
+    id: 'yoga-flow',
+    title: 'Vinyasa Yoga',
+    description: 'A more active yoga flow to build strength and flexibility.',
+    minMood: 3,
+    maxMood: 5
+  },
+  {
+    id: 'creative-writing',
+    title: 'Creative Writing',
+    description: 'Use your positive headspace to create stories or journal success.',
+    minMood: 4,
+    maxMood: 5
+  }
+]
 
 export async function getDashboardData(): Promise<DashboardData> {
   const supabase = await createClient()
@@ -110,15 +184,19 @@ export async function getDashboardData(): Promise<DashboardData> {
     .from('articles')
     .select('id, title')
     .order('date_published', { ascending: false })
-    .limit(2)
+    .limit(3)
 
-  // Get relaxation suggestions
-  const { data: suggestions } = await supabase
-    .from('relaxation_suggestions')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(2)
+  // Get relaxation suggestions based on mood
+  const moodRating = latestMood?.mood_rating ?? 3 // Default to neutral (3) if no mood
+  
+  const filteredSuggestions = RELAXATION_ACTIVITIES.filter(
+    activity => moodRating >= activity.minMood && moodRating <= activity.maxMood
+  )
+  
+  // Take random 3 or all if less than 3
+  const suggestions = filteredSuggestions
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 3)
 
   // Get recent journal entries (top 3)
   const { data: journals } = await supabase
