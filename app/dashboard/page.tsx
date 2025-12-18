@@ -422,24 +422,44 @@ export default function DashboardPage() {
             <div className="mb-3">
               <h2 className="text-lg font-semibold text-gray-800">Relaxation Suggestions</h2>
             </div>
-            <div 
-              onClick={() => router.push('/relaxation')}
-              className="cursor-pointer rounded-3xl bg-gradient-to-br from-[#6E8450] to-[#4A5A35] p-6 text-white shadow-lg hover:shadow-xl transition-shadow"
-            >
-              <div className="space-y-3">
-                {data?.suggestions && data.suggestions.length > 0 ? (
-                  data.suggestions.map((suggestion) => (
-                    <div key={suggestion.id} className="rounded-2xl bg-white/10 p-4 hover:bg-white/15 transition-colors">
-                      <p className="text-lg font-bold">{suggestion.title}</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <p className="text-white/70">No suggestions available</p>
+            {!data?.hasLoggedMoodToday ? (
+              <div
+                onClick={() => router.push('/mood')}
+                className="cursor-pointer rounded-3xl bg-[#E56C34] p-6 text-white shadow-lg hover:shadow-xl transition-shadow"
+              >
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto">
+                    <span className="text-3xl">😔</span>
                   </div>
-                )}
+                  <div>
+                    <p className="text-xl font-bold mb-2">Seems like your mood its not enough!</p>
+                    <p className="text-white/90 text-sm mb-4">Please log your mood again</p>
+                    <div className="inline-block px-4 py-2 bg-white text-[#E56C34] rounded-full font-semibold text-sm hover:bg-gray-100 transition-colors">
+                      Log Mood Now →
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div
+                onClick={() => router.push('/relaxation')}
+                className="cursor-pointer rounded-3xl bg-gradient-to-br from-[#6E8450] to-[#4A5A35] p-6 text-white shadow-lg hover:shadow-xl transition-shadow"
+              >
+                <div className="space-y-3">
+                  {data?.suggestions && data.suggestions.length > 0 ? (
+                    data.suggestions.map((suggestion) => (
+                      <div key={suggestion.id} className="rounded-2xl bg-white/10 p-4 hover:bg-white/15 transition-colors">
+                        <p className="text-lg font-bold">{suggestion.title}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <p className="text-white/70">No suggestions available</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

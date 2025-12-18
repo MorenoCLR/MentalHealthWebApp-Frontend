@@ -106,21 +106,41 @@ export async function getRelaxationSuggestions() {
   const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
+
   if (authError || !user) {
     redirect('/login')
   }
 
-  // Get the user's most recent mood
-  const { data: recentMood } = await supabase
+  // Get today's date range
+  const now = new Date()
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+
+  // Check if user logged mood TODAY
+  const { data: todayMood } = await supabase
     .from('moods')
     .select('*')
     .eq('user_id', user.id)
+    .gte('mood_at', startOfDay.toISOString())
+    .lt('mood_at', endOfDay.toISOString())
     .order('mood_at', { ascending: false })
     .limit(1)
     .single()
 
-  const moodRating = recentMood?.mood_rating ?? 3 // Default to neutral if no mood found
+  const hasLoggedMoodToday = !!todayMood
+
+  // If no mood logged today, return special state
+  if (!hasLoggedMoodToday) {
+    return {
+      error: null,
+      activities: [],
+      moodRating: null,
+      message: "Seems like your mood its not enough!",
+      hasLoggedMoodToday: false,
+    }
+  }
+
+  const moodRating = todayMood.mood_rating
 
   // Filter activities based on the mood rating algorithm
   // Algorithm: Show activities where the current mood falls within their [minMood, maxMood] range
@@ -129,14 +149,12 @@ export async function getRelaxationSuggestions() {
   )
 
   // Fallback: If for some reason filtering leaves < 2 items, return neutral ones + others
-  const finalActivities = filteredActivities.length > 0 
-    ? filteredActivities 
+  const finalActivities = filteredActivities.length > 0
+    ? filteredActivities
     : RELAXATION_ACTIVITIES.filter(a => a.minMood <= 3 && a.maxMood >= 3)
 
   let infoMessage = ''
-  if (!recentMood) {
-    infoMessage = "We haven't seen a mood log today, so here are some balanced suggestions."
-  } else if (moodRating <= 2) {
+  if (moodRating <= 2) {
     infoMessage = "It looks like you're having a tough time. Here are some gentle ways to take care of yourself."
   } else if (moodRating === 3) {
     infoMessage = "You're feeling okay. Here are some activities to maintain your balance."
@@ -149,6 +167,7 @@ export async function getRelaxationSuggestions() {
     activities: finalActivities,
     moodRating,
     message: infoMessage,
+    hasLoggedMoodToday: true,
   }
 }
 

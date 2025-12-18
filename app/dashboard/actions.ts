@@ -60,6 +60,7 @@ type DashboardData = {
   }>
   stressLevel: number
   goalsCount: number
+  hasLoggedMoodToday: boolean
 }
 
 // Copied from relaxation/actions.ts for consistency
@@ -150,7 +151,25 @@ export async function getDashboardData(): Promise<DashboardData> {
     .eq('id', user.id)
     .single()
 
-  // Get latest mood (today)
+  // Get today's date range
+  const now = new Date()
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+
+  // Get mood logged TODAY
+  const { data: todayMood } = await supabase
+    .from('moods')
+    .select('*')
+    .eq('user_id', user.id)
+    .gte('mood_at', startOfDay.toISOString())
+    .lt('mood_at', endOfDay.toISOString())
+    .order('mood_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  const hasLoggedMoodToday = !!todayMood
+
+  // Get latest mood for other purposes
   const { data: latestMood } = await supabase
     .from('moods')
     .select('*')
@@ -187,16 +206,20 @@ export async function getDashboardData(): Promise<DashboardData> {
     .limit(3)
 
   // Get relaxation suggestions based on mood
-  const moodRating = latestMood?.mood_rating ?? 3 // Default to neutral (3) if no mood
-  
-  const filteredSuggestions = RELAXATION_ACTIVITIES.filter(
-    activity => moodRating >= activity.minMood && moodRating <= activity.maxMood
-  )
-  
-  // Take random 3 or all if less than 3
-  const suggestions = filteredSuggestions
-    .sort(() => 0.5 - Math.random())
-    .slice(0, 3)
+  // If no mood logged today, return empty suggestions
+  let suggestions: typeof RELAXATION_ACTIVITIES = []
+  if (hasLoggedMoodToday && todayMood) {
+    const moodRating = todayMood.mood_rating
+
+    const filteredSuggestions = RELAXATION_ACTIVITIES.filter(
+      activity => moodRating >= activity.minMood && moodRating <= activity.maxMood
+    )
+
+    // Take random 3 or all if less than 3
+    suggestions = filteredSuggestions
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 3)
+  }
 
   // Get recent journal entries (top 3)
   const { data: journals } = await supabase
@@ -262,6 +285,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     journals: journals || [],
     goals: todayGoals || [],
     stressLevel,
-    goalsCount: goalsCount || 0
+    goalsCount: goalsCount || 0,
+    hasLoggedMoodToday
   }
 }

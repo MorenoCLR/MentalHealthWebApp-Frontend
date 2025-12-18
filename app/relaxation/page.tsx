@@ -11,6 +11,7 @@ export default function RelaxationPage() {
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [activities, setActivities] = useState<RelaxationActivity[]>([])
+  const [hasLoggedMoodToday, setHasLoggedMoodToday] = useState(true)
 
   useEffect(() => {
     loadSuggestions()
@@ -18,7 +19,7 @@ export default function RelaxationPage() {
 
   const loadSuggestions = async () => {
     setLoading(true)
-    
+
     // Simulate loading delay for better UX
     await new Promise(resolve => setTimeout(resolve, 2000))
 
@@ -36,6 +37,8 @@ export default function RelaxationPage() {
       if (result.activities) {
         setActivities(result.activities)
       }
+
+      setHasLoggedMoodToday(result.hasLoggedMoodToday ?? true)
     } catch (err) {
       console.error(err)
       setError('Unable to load relaxation suggestions')
@@ -82,6 +85,54 @@ export default function RelaxationPage() {
             <p className="text-xl text-white">
               Please wait...
             </p>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  // No mood logged today - Show orange warning
+  if (!hasLoggedMoodToday && !loading) {
+    return (
+      <div className="relative min-h-screen w-full bg-[#E56C34] overflow-hidden pb-12">
+        {/* Navbar */}
+        <Navbar />
+
+        {/* Decorative background patterns */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
+          <div className="absolute top-10 left-20 w-64 h-64 border-4 border-white rounded-full"></div>
+          <div className="absolute top-40 right-32 w-96 h-96 border-4 border-white rounded-full"></div>
+          <div className="absolute bottom-20 left-40 w-48 h-48 border-4 border-white rounded-full"></div>
+        </div>
+
+        {/* Main content with sidebar offset */}
+        <div className="md:ml-20">
+          {/* Page Header */}
+          <header className="relative flex items-center justify-between px-6 py-6">
+            <h1 className="text-2xl font-semibold text-white">Relaxation</h1>
+          </header>
+
+          {/* Main content */}
+          <main className="relative px-6 py-6 flex items-center justify-center min-h-[calc(100vh-120px)]">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="bg-white/20 backdrop-blur-sm rounded-3xl p-12 border border-white/30">
+                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <span className="text-6xl">😔</span>
+                </div>
+                <h2 className="text-4xl font-bold text-white mb-4">
+                  {info || "Seems like your mood its not enough!"}
+                </h2>
+                <p className="text-xl text-white/90 mb-8">
+                  Please log your mood again
+                </p>
+                <button
+                  onClick={() => router.push('/mood')}
+                  className="px-8 py-4 bg-white text-[#E56C34] font-semibold rounded-full hover:bg-gray-100 transition-colors shadow-lg text-lg"
+                >
+                  Log Your Mood Now
+                </button>
+              </div>
+            </div>
           </main>
         </div>
       </div>
@@ -148,7 +199,7 @@ export default function RelaxationPage() {
 
                 {/* Image */}
                 <div className="flex-1 h-64 bg-gray-200 relative overflow-hidden">
-                  <img 
+                  <img
                     src={activity.image}
                     alt={activity.title}
                     className="w-full h-full object-cover"

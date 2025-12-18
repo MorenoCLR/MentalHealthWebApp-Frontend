@@ -18,6 +18,9 @@ export default function JournalPage() {
   const [content, setContent] = useState("")
   const [errors, setErrors] = useState<{ title?: string }>({})
   const [submitting, setSubmitting] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [lastSavedTitle, setLastSavedTitle] = useState("")
+  const [lastSavedContent, setLastSavedContent] = useState("")
 
   useEffect(() => {
     loadJournals()
@@ -27,10 +30,24 @@ export default function JournalPage() {
     if (selectedJournal) {
       setTitle(selectedJournal.title)
       setContent(selectedJournal.content || "")
+      setLastSavedTitle(selectedJournal.title)
+      setLastSavedContent(selectedJournal.content || "")
       setIsCreating(false)
       setErrors({})
+      setHasUnsavedChanges(false)
     }
   }, [selectedJournal])
+
+  // Track unsaved changes
+  useEffect(() => {
+    if (isCreating) {
+      setHasUnsavedChanges(title.trim() !== "" || content.trim() !== "")
+    } else {
+      setHasUnsavedChanges(
+        title !== lastSavedTitle || content !== lastSavedContent
+      )
+    }
+  }, [title, content, lastSavedTitle, lastSavedContent, isCreating])
 
   const loadJournals = async () => {
     setLoading(true)
@@ -49,7 +66,10 @@ export default function JournalPage() {
     setIsCreating(true)
     setTitle("")
     setContent("")
+    setLastSavedTitle("")
+    setLastSavedContent("")
     setErrors({})
+    setHasUnsavedChanges(false)
   }
 
   const handleJournalClick = (journal: JournalEntry) => {
@@ -81,6 +101,11 @@ export default function JournalPage() {
       if (result?.error) {
         setErrors({ title: result.error })
       } else {
+        // Update last saved state
+        setLastSavedTitle(title)
+        setLastSavedContent(content)
+        setHasUnsavedChanges(false)
+
         const updatedJournals = await getJournals()
         if (updatedJournals.data) {
           setJournals(updatedJournals.data)
@@ -168,11 +193,11 @@ export default function JournalPage() {
                         {formatDate(journal.date_created)}
                       </div>
                     </div>
-                    {selectedJournal?.id === journal.id && (
+                    {/* {selectedJournal?.id === journal.id && (
                       <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-white flex-shrink-0 ml-2">
                         <Plus className="w-3 h-3" />
                       </div>
-                    )}
+                    )} */}
                   </div>
                 </button>
               ))
@@ -192,27 +217,41 @@ export default function JournalPage() {
           {selectedJournal || isCreating ? (
             <div className="h-full flex flex-col relative z-10">
               {/* Header */}
-              <header className="bg-white/10 backdrop-blur-sm px-8 py-6 flex items-center justify-between border-b border-white/10">
-                <div className="text-white/90 font-medium text-lg flex items-center gap-2">
+              <header className="bg-[#6E8450] px-8 py-6 flex items-center justify-between border-b border-white/20 shadow-lg">
+                <div className="text-white font-medium text-lg flex items-center gap-3">
                   <span className="bg-white/20 p-2 rounded-lg"><PenSquare size={20}/></span>
-                  {isCreating 
-                    ? "New Entry" 
-                    : `Entry ${getJournalNumber(journals.findIndex(j => j.id === selectedJournal!.id))}`
-                  }
+                  <div className="flex items-center gap-2">
+                    <span>
+                      {isCreating
+                        ? "New Entry"
+                        : `Entry ${getJournalNumber(journals.findIndex(j => j.id === selectedJournal!.id))}`
+                      }
+                    </span>
+                    {hasUnsavedChanges && (
+                      <span className="flex items-center gap-1.5 text-xs bg-yellow-400 text-gray-800 px-3 py-1 rounded-full font-semibold">
+                        <span className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></span>
+                        Unsaved
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={handleSave}
-                    disabled={submitting}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-white font-medium disabled:opacity-50"
+                    disabled={submitting || !hasUnsavedChanges}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
+                      hasUnsavedChanges
+                        ? 'bg-white text-[#6E8450] hover:bg-gray-100'
+                        : 'bg-white/20 text-white/50 cursor-not-allowed'
+                    }`}
                   >
                     <Save className="w-4 h-4" />
-                    Save
+                    {hasUnsavedChanges ? 'Save Changes' : 'Saved'}
                   </button>
                   {!isCreating && (
                     <button
                       onClick={handleDelete}
-                      className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-lg transition-colors text-white"
+                      className="p-2 bg-red-500/30 hover:bg-red-500/50 rounded-lg transition-colors text-white"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
