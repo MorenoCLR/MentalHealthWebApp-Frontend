@@ -17,11 +17,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create response object
-    const successUrl = new URL('/dashboard', request.url)
-    const errorUrl = new URL('/error', request.url)
+    // Create response object using proper host from request headers
+    const protocol = request.headers.get('x-forwarded-proto') || 'https'
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000'
+    const baseUrl = `${protocol}://${host}`
+
+    const successUrl = new URL('/dashboard', baseUrl)
+    const errorUrl = new URL('/error', baseUrl)
     errorUrl.searchParams.set('reason', 'login_failed')
-    
+
     const response = NextResponse.redirect(successUrl)
 
     const supabase = createServerClient(
