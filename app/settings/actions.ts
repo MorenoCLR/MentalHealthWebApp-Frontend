@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 export async function getUserProfile() {
   const supabase = await createClient()
@@ -134,46 +133,25 @@ export async function deleteAccount(formData: FormData) {
     return { error: 'Please type DELETE to confirm' }
   }
 
-  // Check for service role key availability before starting deletion
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceRoleKey) {
-    console.error('SUPABASE_SERVICE_ROLE_KEY is not set. Cannot perform full account deletion.')
-    return { error: 'Server configuration error: Unable to delete account. Please contact support.' }
-  }
-
-  // Delete from Supabase Auth using admin client first (to ensure we can)
-  const adminSupabase = createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    }
-  )
-
-  // Delete user data (cascade will handle related records)
-  // We delete data first because if we delete auth user first, RLS might block data deletion if not configured correctly
-  // (though usually admin delete cascades, but we are doing manual data deletion here)
-  const { error } = await supabase
+  // Delete user data first (optional if we rely on cascade, but good for cleanup)
+  const { error: dataError } = await supabase
     .from('users')
     .delete()
     .eq('id', user.id)
 
-  if (error) {
-    return { error: error.message }
+  if (dataError) {
+    return { error: dataError.message }
   }
 
-  const { error: deleteError } = await adminSupabase.auth.admin.deleteUser(user.id)
-  
-  if (deleteError) {
-    console.error('Error deleting auth user:', deleteError)
-    // If auth deletion fails but data is gone, we still sign out.
-    // This is an edge case where user is "half deleted" but effectively gone.
+  // Call the secure RPC function to delete the auth user
+  const { error: rpcError } = await supabase.rpc('delete_user')
+
+  if (rpcError) {
+    console.error('Error deleting account via RPC:', rpcError)
+    return { error: 'Failed to delete account. Please try again.' }
   }
 
-  // Sign out
+  // Sign out (although the user is deleted, this clears the session)
   await supabase.auth.signOut()
   redirect('/login')
 }
