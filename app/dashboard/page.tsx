@@ -48,6 +48,9 @@ type PhysicalHealth = {
   updated_at: string | null
   complaints: string | null
   health_id: string | null
+  weight?: number | null
+  sleepHours?: number | null
+  stepCounts?: number | null
 }
 
 type Article = {

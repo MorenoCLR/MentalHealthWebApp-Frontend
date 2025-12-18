@@ -109,8 +109,8 @@ export default function JournalPage() {
         const updatedJournals = await getJournals()
         if (updatedJournals.data) {
           setJournals(updatedJournals.data)
-          if (isCreating && result?.data) {
-             setSelectedJournal(result.data)
+          if (isCreating && 'data' in result && result.data) {
+             setSelectedJournal(result.data as JournalEntry)
              setIsCreating(false)
           } else if (selectedJournal) {
              // Refresh selected journal data to ensure sync
