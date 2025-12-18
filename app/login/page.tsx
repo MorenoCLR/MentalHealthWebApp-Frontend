@@ -1,15 +1,15 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { sendOtpClient, verifyOtpClient, resetPasswordClient, resendConfirmationClient } from "./clientAuth"
 import { Eye, EyeOff } from "lucide-react"
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams()
   const modeParam = searchParams.get('mode') as "password" | "otp" | "forgot" | "resend" | "waiting_for_confirmation" | null
-  
+
   const [mode, setMode] = useState<"password" | "otp" | "forgot" | "resend">(
     modeParam === "waiting_for_confirmation" ? "resend" : (modeParam || "password")
   )
@@ -172,5 +172,20 @@ export default function LoginPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="relative min-h-screen w-full bg-[#F5F5F0] flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#A4B870]/30 border-t-[#A4B870]" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }
