@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
 import { getJournals, createJournal, updateJournal, deleteJournal, type JournalEntry } from "./actions"
-import { PenSquare, Plus, Trash2, Save } from "lucide-react"
+import { PenSquare, Plus, Trash2, Save, Menu, X } from "lucide-react"
 
 export default function JournalPage() {
   const router = useRouter()
@@ -12,6 +12,7 @@ export default function JournalPage() {
   const [selectedJournal, setSelectedJournal] = useState<JournalEntry | null>(null)
   const [loading, setLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Form states
   const [title, setTitle] = useState("")
@@ -75,6 +76,7 @@ export default function JournalPage() {
   const handleJournalClick = (journal: JournalEntry) => {
     setSelectedJournal(journal)
     setIsCreating(false)
+    setSidebarOpen(false) // Close sidebar on mobile after selection
   }
 
   const handleSave = async () => {
@@ -150,10 +152,28 @@ export default function JournalPage() {
       <Navbar />
 
       {/* Main Content Area (offset by Navbar width on desktop) */}
-      <div className="flex-1 flex md:ml-20 h-full">
+      <div className="flex-1 flex md:ml-20 h-full relative">
+        
+        {/* Mobile Overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
         
         {/* Journal List Sidebar */}
-        <aside className="w-80 bg-[#8FA05E] p-6 flex flex-col shadow-xl z-10 overflow-y-auto">
+        <aside className={`
+          fixed md:relative
+          left-0 md:left-auto
+          top-0
+          w-80 max-w-[85vw]
+          bg-[#8FA05E] p-6 flex flex-col shadow-xl z-40 overflow-y-auto
+          h-full
+          transition-transform duration-300 ease-in-out
+          md:ml-0
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
           {/* New Journal Button */}
           <button
             onClick={handleCreateNew}
@@ -217,36 +237,48 @@ export default function JournalPage() {
           {selectedJournal || isCreating ? (
             <div className="h-full flex flex-col relative z-10">
               {/* Header */}
-              <header className="bg-[#6E8450] px-8 py-6 flex items-center justify-between border-b border-white/20 shadow-lg">
-                <div className="text-white font-medium text-lg flex items-center gap-3">
-                  <span className="bg-white/20 p-2 rounded-lg"><PenSquare size={20}/></span>
-                  <div className="flex items-center gap-2">
-                    <span>
+              <header className="bg-[#6E8450] px-4 md:px-8 py-4 md:py-6 flex items-center justify-between border-b border-white/20 shadow-lg">
+                {/* Mobile Menu Button */}
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="md:hidden p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-white"
+                  aria-label="Open menu"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                
+                <div className="text-white font-medium text-sm md:text-lg flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+                  <span className="hidden md:block bg-white/20 p-2 rounded-lg"><PenSquare size={20}/></span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="truncate">
                       {isCreating
                         ? "New Entry"
                         : `Entry ${getJournalNumber(journals.findIndex(j => j.id === selectedJournal!.id))}`
                       }
                     </span>
                     {hasUnsavedChanges && (
-                      <span className="flex items-center gap-1.5 text-xs bg-yellow-400 text-gray-800 px-3 py-1 rounded-full font-semibold">
+                      <span className="hidden sm:flex items-center gap-1.5 text-xs bg-yellow-400 text-gray-800 px-3 py-1 rounded-full font-semibold flex-shrink-0">
                         <span className="w-2 h-2 bg-gray-800 rounded-full animate-pulse"></span>
                         Unsaved
                       </span>
                     )}
+                    {hasUnsavedChanges && (
+                      <span className="sm:hidden w-2 h-2 bg-yellow-400 rounded-full animate-pulse flex-shrink-0"></span>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                   <button
                     onClick={handleSave}
                     disabled={submitting || !hasUnsavedChanges}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
+                    className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg transition-colors font-medium text-sm md:text-base ${
                       hasUnsavedChanges
                         ? 'bg-white text-[#6E8450] hover:bg-gray-100'
                         : 'bg-white/20 text-white/50 cursor-not-allowed'
                     }`}
                   >
                     <Save className="w-4 h-4" />
-                    {hasUnsavedChanges ? 'Save Changes' : 'Saved'}
+                    <span className="hidden sm:inline">{hasUnsavedChanges ? 'Save Changes' : 'Saved'}</span>
                   </button>
                   {!isCreating && (
                     <button
@@ -261,15 +293,15 @@ export default function JournalPage() {
               </header>
 
               {/* Content Editor */}
-              <div className="flex-1 overflow-y-auto p-8 flex flex-col min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col min-h-0">
                 <div className="flex-1 max-w-4xl mx-auto bg-white/95 backdrop-blur rounded-3xl shadow-2xl flex flex-col w-full">
                   {/* Title Section */}
-                  <div className="border-b border-gray-100 p-8 pb-4 flex-shrink-0">
+                  <div className="border-b border-gray-100 p-4 md:p-8 pb-4 flex-shrink-0">
                     <input
                       type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className={`text-3xl font-bold text-gray-800 bg-transparent border-none outline-none w-full placeholder:text-gray-300 focus:ring-0 ${
+                      className={`text-xl md:text-3xl font-bold text-gray-800 bg-transparent border-none outline-none w-full placeholder:text-gray-300 focus:ring-0 ${
                         errors.title ? 'text-red-600' : ''
                       }`}
                       placeholder="Title your entry..."
@@ -297,11 +329,11 @@ export default function JournalPage() {
                   </div>
 
                   {/* Text Area */}
-                  <div className="p-8 flex-1 flex flex-col min-h-0">
+                  <div className="p-4 md:p-8 flex-1 flex flex-col min-h-0">
                     <textarea
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
-                      className="w-full flex-1 text-lg text-gray-600 bg-transparent border-none outline-none resize-none placeholder:text-gray-300 focus:ring-0 leading-relaxed min-h-0"
+                      className="w-full flex-1 text-base md:text-lg text-gray-600 bg-transparent border-none outline-none resize-none placeholder:text-gray-300 focus:ring-0 leading-relaxed min-h-0"
                       placeholder="What's on your mind today?"
                       style={{ height: '100%' }}
                     />
@@ -310,13 +342,25 @@ export default function JournalPage() {
               </div>
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center relative z-10">
+            <div className="h-full flex items-center justify-center relative z-10 p-6">
+              {/* Mobile Menu Button when no entry selected */}
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="md:hidden fixed top-6 left-6 p-3 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-white shadow-lg z-20"
+                aria-label="Open menu"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              
               <div className="text-center text-white/60">
-                <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <PenSquare className="w-10 h-10" />
+                <div className="w-20 md:w-24 h-20 md:h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <PenSquare className="w-8 md:w-10 h-8 md:h-10" />
                 </div>
-                <h3 className="text-2xl font-semibold text-white mb-2">Select an entry</h3>
-                <p className="text-white/70">Choose a journal from the sidebar or create a new one.</p>
+                <h3 className="text-xl md:text-2xl font-semibold text-white mb-2">Select an entry</h3>
+                <p className="text-white/70 text-sm md:text-base px-4">
+                  <span className="hidden md:inline">Choose a journal from the sidebar or create a new one.</span>
+                  <span className="md:hidden">Tap the menu to view your journals</span>
+                </p>
               </div>
             </div>
           )}
