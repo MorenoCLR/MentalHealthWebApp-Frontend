@@ -83,7 +83,7 @@ export default function VisualizationPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full bg-[#A4B870] pb-12">
+    <div className="min-h-screen w-full bg-[#A4B870]">
       {/* Navbar */}
       <Navbar />
 
@@ -97,12 +97,12 @@ export default function VisualizationPage() {
       {/* Main content with sidebar offset */}
       <div className="md:ml-20">
         {/* Page Header */}
-        <header className="relative flex items-center justify-between px-6 py-6">
+        <header className="px-6 py-6">
           <h1 className="text-2xl font-semibold text-white">Visualization</h1>
         </header>
 
         {/* Main content */}
-        <main className="relative px-6 pt-4">
+        <main className="px-6 pt-4 pb-12">
           <div className="max-w-2xl mx-auto">
             {/* Header */}
             <div className="text-center mb-8">

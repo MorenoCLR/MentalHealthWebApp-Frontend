@@ -131,19 +131,19 @@ export default function MoodLoggingPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full transition-colors duration-500 pb-12">
+    <div className="min-h-screen w-full transition-colors duration-500" style={{ backgroundColor }}>
       {/* Navbar */}
       <Navbar />
 
       {/* Main content with sidebar offset */}
       <div className="md:ml-20">
         {/* Page Header */}
-        <header className="relative flex items-center justify-between px-6 py-6">
+        <header className="px-6 py-6">
           <h1 className="text-2xl font-semibold text-white">Mood Check</h1>
         </header>
 
         {/* Main content */}
-        <main className="flex min-h-[calc(100vh-100px)] w-full items-center justify-center px-8">
+        <main className="flex min-h-[calc(100vh-120px)] w-full items-center justify-center px-8 pb-12">
         <div className="w-full max-w-md text-center">
           {/* Greeting with selected/today emoji */}
           <div className="mb-8">

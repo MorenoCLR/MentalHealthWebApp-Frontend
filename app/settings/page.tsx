@@ -181,12 +181,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F0] flex">
+    <div className="min-h-screen bg-[#F5F5F0]">
       {/* Shared Navbar */}
       <Navbar />
 
       {/* Main Content Area (offset by Navbar width on desktop) */}
-      <div className="flex-1 md:ml-20 p-6">
+      <div className="flex-1 md:ml-20 p-6 pb-12">
         {/* Page Header */}
         <div className="mb-8 mt-12 md:mt-0">
           <h1 className="text-3xl font-bold text-gray-800">Settings</h1>
@@ -577,7 +577,7 @@ export default function SettingsPage() {
                         type="text"
                         value={deleteConfirmation}
                         onChange={(e) => setDeleteConfirmation(e.target.value)}
-                        className="w-full rounded-full border-2 border-red-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        className="w-full rounded-full border-2 border-red-300 px-4 py-3 text-red-800 font-semibold placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
                         placeholder="DELETE"
                       />
                     </div>

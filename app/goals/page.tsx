@@ -214,7 +214,7 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="relative min-h-screen w-full bg-[#A4B870] pb-12">
+    <div className="min-h-screen w-full bg-[#A4B870]">
       {/* Navbar */}
       <Navbar />
 
@@ -264,7 +264,7 @@ export default function GoalsPage() {
         </header>
 
         {/* Main content */}
-        <main className="relative flex flex-col items-center justify-center px-8 pb-8 min-h-[calc(100vh-100px)]">
+        <main className="flex flex-col items-center justify-center px-8 pb-12 min-h-[calc(100vh-120px)]">
         {goals.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center text-center">
             <h1 className="text-3xl font-bold text-white mb-2">

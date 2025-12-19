@@ -142,14 +142,14 @@ export default function DashboardPage() {
                     data?.latestMood?.mood_rating === 2 ? "😰" : "😢"
 
   return (
-    <div className="min-h-screen bg-[#F5F5F0] pb-12">
+    <div className="min-h-screen bg-[#F5F5F0]">
       {/* Navbar */}
       <Navbar />
 
       {/* Main content */}
-      <div className="md:ml-20 p-6">
+      <div className="md:ml-20 p-6 pb-12">
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between mt-12 md:mt-0">
+        <div className="mb-6 mt-12 md:mt-0">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
               <span className="text-2xl">👋</span> Hi, {data?.user?.username || data?.user?.full_name || 'there'}!

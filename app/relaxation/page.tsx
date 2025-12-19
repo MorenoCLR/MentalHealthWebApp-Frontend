@@ -94,7 +94,7 @@ export default function RelaxationPage() {
   // No mood logged today - Show orange warning
   if (!hasLoggedMoodToday && !loading) {
     return (
-      <div className="relative min-h-screen w-full bg-[#E56C34] pb-12">
+      <div className="min-h-screen w-full bg-[#E56C34]">
         {/* Navbar */}
         <Navbar />
 

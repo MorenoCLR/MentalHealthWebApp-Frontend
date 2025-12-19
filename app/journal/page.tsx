@@ -145,15 +145,15 @@ export default function JournalPage() {
   }
 
   return (
-    <div className="flex h-screen bg-[#F5F5F0]">
+    <div className="flex h-screen bg-[#F5F5F0] overflow-hidden">
       {/* Shared Navbar */}
       <Navbar />
 
       {/* Main Content Area (offset by Navbar width on desktop) */}
-      <div className="flex-1 flex md:ml-20 h-full overflow-hidden">
+      <div className="flex-1 flex md:ml-20 h-full">
         
         {/* Journal List Sidebar */}
-        <aside className="w-80 bg-[#8FA05E] p-6 flex flex-col shadow-xl z-10 h-full">
+        <aside className="w-80 bg-[#8FA05E] p-6 flex flex-col shadow-xl z-10 overflow-y-auto">
           {/* New Journal Button */}
           <button
             onClick={handleCreateNew}

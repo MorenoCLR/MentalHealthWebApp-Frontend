@@ -113,9 +113,12 @@ export default function ArticlesPage() {
 
   if (loading) {
     return (
-      <div className="relative min-h-screen w-full bg-[#A4B870]">
+      <div className="min-h-screen w-full bg-[#A4B870]">
         {/* Navbar */}
         <Navbar />
+
+        {/* Main content with sidebar offset */}
+        <div className="md:ml-20 p-6 pb-12"></div>
 
         {/* Decorative circles - only render on client to avoid hydration error */}
         {mounted && (
