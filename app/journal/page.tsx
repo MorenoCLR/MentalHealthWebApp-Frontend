@@ -157,7 +157,7 @@ export default function JournalPage() {
         {/* Mobile Overlay */}
         {sidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            className="fixed inset-0 bg-black/50 z-20 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -165,13 +165,10 @@ export default function JournalPage() {
         {/* Journal List Sidebar */}
         <aside className={`
           fixed md:relative
-          left-0 md:left-auto
-          top-0
           w-80 max-w-[85vw]
-          bg-[#8FA05E] p-6 flex flex-col shadow-xl z-40 overflow-y-auto
+          bg-[#8FA05E] p-6 flex flex-col shadow-xl z-30 overflow-y-auto
           h-full
           transition-transform duration-300 ease-in-out
-          md:ml-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}>
           {/* New Journal Button */}
