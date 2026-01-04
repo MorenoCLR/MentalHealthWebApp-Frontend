@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const publicRoutes = ['/', '/login']
+  const publicRoutes = ['/', '/login', '/register']
   const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
 
   // Allow access to /register if user is confirming email (needs to complete profile)
@@ -34,17 +34,9 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname === '/register' &&
     request.nextUrl.searchParams.get('confirmed') === 'true'
 
-  // If user is logged in and trying to access public routes, redirect to dashboard
-  if (user && isPublicRoute) {
-    const protocol = request.headers.get('x-forwarded-proto') || 'https'
-    const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000'
-    const dashboardUrl = new URL('/dashboard', `${protocol}://${host}`)
-    return NextResponse.redirect(dashboardUrl)
-  }
-
-  // If user is logged in and on /register without confirmed=true, redirect to dashboard
-  if (user && request.nextUrl.pathname === '/register' && !isRegisterWithConfirmed) {
-    const protocol = request.headers.get('x-forwarded-proto') || 'https'
+  // If user is logged in and trying to access public routes (except /register with confirmed=true), redirect to dashboard
+  if (user && isPublicRoute && !isRegisterWithConfirmed) {
+    const protocol = request.headers.get('x-forwarded-proto') || 'http'
     const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'localhost:3000'
     const dashboardUrl = new URL('/dashboard', `${protocol}://${host}`)
     return NextResponse.redirect(dashboardUrl)
@@ -61,7 +53,9 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - api (API routes)
+     * - auth/confirm (auth callback)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api|auth/confirm|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
