@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar"
 import {
   User, Mail, Lock, Bell, Shield, Database, Trash2, Download,
   LogOut, ChevronRight, Check, X, Settings as SettingsIcon,
-  Moon, Sun, Globe, Phone, Calendar
+  Moon, Sun, Globe, Phone
 } from "lucide-react"
 import { 
   getUserProfile, updateProfile, updateEmail, updatePassword, 
