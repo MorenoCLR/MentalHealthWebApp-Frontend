@@ -14,10 +14,13 @@ function LoginContent() {
     modeParam === "waiting_for_confirmation" ? "resend" : (modeParam || "password")
   )
   const [email, setEmail] = useState<string>("")
+  const [password, setPassword] = useState<string>("")
   const [token, setToken] = useState<string>("")
   const [loading, setLoading] = useState(false)
   const [resetCooldown, setResetCooldown] = useState(0)
   const [showPassword, setShowPassword] = useState(false)
+  const [emailError, setEmailError] = useState<string>("")
+  const [passwordError, setPasswordError] = useState<string>("")
 
   return (
     <div className="relative min-h-screen w-full bg-[#F5F5F0] overflow-hidden">
@@ -32,15 +35,72 @@ function LoginContent() {
 
             <div className="mt-6">
               <div className="text-left text-xs text-gray-700 font-medium mb-2">Email Address</div>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email..." className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]" type="email" />
+              <input
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  setEmailError("")
+                }}
+                placeholder="Enter your email..."
+                className={`w-full rounded-full border px-4 py-3 shadow-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 ${
+                  emailError ? "border-red-400 bg-red-50 focus:ring-red-400" : "border-gray-200 focus:ring-[#A4B870]"
+                }`}
+                type="email"
+              />
+              {emailError && (
+                <p className="text-red-500 text-sm mt-1 text-left">{emailError}</p>
+              )}
             </div>
 
             {mode === "password" && (
-              <form action="/api/auth/login" method="post" className="mt-4">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+
+                  // Reset errors
+                  setEmailError("")
+                  setPasswordError("")
+
+                  // Validate fields
+                  let hasError = false
+
+                  if (!email || email.trim().length === 0) {
+                    setEmailError("Email cannot be empty.")
+                    hasError = true
+                  }
+
+                  if (!password || password.trim().length === 0) {
+                    setPasswordError("Password cannot be empty.")
+                    hasError = true
+                  }
+
+                  // If there are errors, don't submit
+                  if (hasError) return
+
+                  // Submit the form
+                  const form = e.currentTarget
+                  form.submit()
+                }}
+                action="/api/auth/login"
+                method="post"
+                className="mt-4"
+              >
                 <input type="hidden" name="email" value={email} />
+                <input type="hidden" name="password" value={password} />
                 <div className="text-left text-xs text-gray-700 font-medium mb-2">Password</div>
                 <div className="relative">
-                  <input name="password" placeholder="Enter your password..." className="w-full rounded-full border border-gray-200 px-4 py-3 shadow-sm pr-10 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]" type={showPassword ? "text" : "password"} />
+                  <input
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value)
+                      setPasswordError("")
+                    }}
+                    placeholder="Enter your password..."
+                    className={`w-full rounded-full border px-4 py-3 shadow-sm pr-10 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 ${
+                      passwordError ? "border-red-400 bg-red-50 focus:ring-red-400" : "border-gray-200 focus:ring-[#A4B870]"
+                    }`}
+                    type={showPassword ? "text" : "password"}
+                  />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -53,6 +113,9 @@ function LoginContent() {
                     )}
                   </button>
                 </div>
+                {passwordError && (
+                  <p className="text-red-500 text-sm mt-1 text-left">{passwordError}</p>
+                )}
 
                 <div className="mt-4 text-left text-xs">
                   <button type="button" onClick={() => setMode("forgot")} className="text-gray-500 hover:underline">Forgot Password?</button>
