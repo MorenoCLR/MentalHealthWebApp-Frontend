@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
-import { 
-  User, Mail, Lock, Bell, Shield, Database, Trash2, Download, 
+import {
+  User, Mail, Lock, Bell, Shield, Database, Trash2, Download,
   LogOut, ChevronRight, Check, X, Settings as SettingsIcon,
-  Moon, Sun, Globe, Phone, MapPin, Calendar
+  Moon, Sun, Globe, Phone, Calendar
 } from "lucide-react"
 import { 
   getUserProfile, updateProfile, updateEmail, updatePassword, 
@@ -27,8 +27,7 @@ export default function SettingsPage() {
   // Form states
   const [profileData, setProfileData] = useState({
     full_name: '',
-    bio: '',
-    location: '',
+    username: '',
     phone: ''
   })
   const [emailData, setEmailData] = useState({ email: '' })
@@ -66,9 +65,8 @@ export default function SettingsPage() {
       setUserProfile(profileResult.user)
       setProfileData({
         full_name: profileResult.user.full_name || '',
-        bio: profileResult.user.bio || '',
-        location: profileResult.user.location || '',
-        phone: profileResult.user.phone || ''
+        username: profileResult.user.username || '',
+        phone: profileResult.user.phone_number || ''
       })
       setEmailData({ email: profileResult.user.email || '' })
     }
@@ -86,13 +84,12 @@ export default function SettingsPage() {
     setSaving(true)
     const formData = new FormData()
     formData.append('full_name', profileData.full_name)
-    formData.append('bio', profileData.bio)
-    formData.append('location', profileData.location)
+    formData.append('username', profileData.username)
     formData.append('phone', profileData.phone)
-    
+
     const result = await updateProfile(formData)
     setSaving(false)
-    
+
     if (result?.error) {
       showMessage('error', result.error)
     } else {
@@ -329,15 +326,15 @@ export default function SettingsPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <MapPin size={16} className="inline mr-2" />
-                      Location
+                      <User size={16} className="inline mr-2" />
+                      Username
                     </label>
                     <input
                       type="text"
-                      value={profileData.location}
-                      onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                      value={profileData.username}
+                      onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
                       className="w-full rounded-full border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
-                      placeholder="City, Country"
+                      placeholder="Enter your username"
                     />
                   </div>
 
@@ -352,19 +349,6 @@ export default function SettingsPage() {
                       onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                       className="w-full rounded-full border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
                       placeholder="+62 8XX-XXXX-XXXX"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bio
-                    </label>
-                    <textarea
-                      value={profileData.bio}
-                      onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                      rows={4}
-                      className="w-full rounded-3xl border border-gray-200 px-4 py-3 text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4B870]"
-                      placeholder="Tell us about yourself..."
                     />
                   </div>
 

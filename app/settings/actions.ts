@@ -42,17 +42,15 @@ export async function updateProfile(formData: FormData) {
   }
 
   const full_name = formData.get('full_name') as string
-  const bio = formData.get('bio') as string
-  const location = formData.get('location') as string
+  const username = formData.get('username') as string
   const phone = formData.get('phone') as string
 
   const { error } = await supabase
     .from('users')
     .update({
       full_name,
-      bio,
-      location,
-      phone,
+      username,
+      phone_number: phone,
       updated_at: new Date().toISOString()
     })
     .eq('id', user.id)
