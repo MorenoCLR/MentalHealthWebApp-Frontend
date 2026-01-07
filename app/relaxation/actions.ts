@@ -175,7 +175,7 @@ export async function saveRelaxationSuggestion(activityId: string) {
   const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
+
   if (authError || !user) {
     redirect('/login')
   }
@@ -194,7 +194,7 @@ export async function saveRelaxationSuggestion(activityId: string) {
   }
 
   const activity = RELAXATION_ACTIVITIES.find(a => a.id === activityId)
-  
+
   if (!activity) {
     return { error: 'Activity not found' }
   }
@@ -213,4 +213,63 @@ export async function saveRelaxationSuggestion(activityId: string) {
   }
 
   return { success: true }
+}
+
+export async function saveSelectedActivities(activityIds: string[]) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    redirect('/login')
+  }
+
+  // Validate at least 1 activity selected
+  if (!activityIds || activityIds.length === 0) {
+    return { error: 'Please select at least 1 activity' }
+  }
+
+  // Get the most recent mood
+  const { data: recentMood } = await supabase
+    .from('moods')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('mood_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (!recentMood) {
+    return { error: 'No recent mood found' }
+  }
+
+  // Find all selected activities
+  const selectedActivities = RELAXATION_ACTIVITIES.filter(a => activityIds.includes(a.id))
+
+  if (selectedActivities.length === 0) {
+    return { error: 'No valid activities found' }
+  }
+
+  // Prepare batch insert data
+  const insertData = selectedActivities.map(activity => ({
+    user_id: user.id,
+    mood_id: recentMood.id,
+    activity_suggestion: JSON.stringify(activity),
+    created_at: new Date().toISOString()
+  }))
+
+  // Insert all selected activities
+  const { error } = await supabase
+    .from('relaxation_suggestions')
+    .insert(insertData)
+
+  if (error) {
+    console.error('Error saving relaxation suggestions:', error)
+    return { error: error.message }
+  }
+
+  return {
+    success: true,
+    count: selectedActivities.length,
+    message: `Successfully saved ${selectedActivities.length} activity(ies)`
+  }
 }

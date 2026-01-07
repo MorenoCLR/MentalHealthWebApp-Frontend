@@ -356,6 +356,22 @@ type PhysicalHealthData = {
 - **Returns**: `{ success: true }` or `{ error: string }`
 - **Database Table**: `relaxation_suggestions` (user_id, mood_id, activity_suggestion)
 
+#### `saveSelectedActivities(activityIds: string[])`
+- **Purpose**: Saves multiple selected relaxation activities to database
+- **Authentication**: Requires authenticated user
+- **Parameters**: Array of activity IDs
+- **Validation**:
+  - At least 1 activity must be selected
+  - Maximum: All available activities
+  - All IDs must match valid activities
+- **Behavior**:
+  1. Retrieves most recent mood entry
+  2. Filters activities to only valid selections
+  3. Performs batch insert of all selected activities
+  4. Each activity stored as JSON in separate row
+- **Returns**: `{ success: true, count: number, message: string }` or `{ error: string }`
+- **Database Table**: `relaxation_suggestions` (user_id, mood_id, activity_suggestion, created_at)
+
 **Type Definitions**:
 ```typescript
 type RelaxationActivity = {
@@ -744,7 +760,7 @@ filteredActivities = RELAXATION_ACTIVITIES.filter(
 
 ## Summary Statistics
 
-- **Total Server Actions**: 35+
+- **Total Server Actions**: 36+
 - **Total Client Functions**: 5
 - **API Routes**: 1
 - **Feature Modules**: 10

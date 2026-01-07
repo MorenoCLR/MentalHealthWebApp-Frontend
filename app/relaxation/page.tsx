@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/Navbar"
-import { getRelaxationSuggestions, type RelaxationActivity } from "./actions"
+import { getRelaxationSuggestions, saveSelectedActivities, type RelaxationActivity } from "./actions"
+import { Check } from "lucide-react"
 
 export default function RelaxationPage() {
   const router = useRouter()
@@ -12,6 +13,9 @@ export default function RelaxationPage() {
   const [info, setInfo] = useState<string | null>(null)
   const [activities, setActivities] = useState<RelaxationActivity[]>([])
   const [hasLoggedMoodToday, setHasLoggedMoodToday] = useState(true)
+  const [selectedActivities, setSelectedActivities] = useState<string[]>([])
+  const [saving, setSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   useEffect(() => {
     loadSuggestions()
@@ -49,6 +53,47 @@ export default function RelaxationPage() {
 
   const handleMoodRedirect = () => {
     router.push('/mood')
+  }
+
+  const toggleActivity = (activityId: string) => {
+    setSelectedActivities(prev => {
+      if (prev.includes(activityId)) {
+        return prev.filter(id => id !== activityId)
+      } else {
+        return [...prev, activityId]
+      }
+    })
+  }
+
+  const handleSaveActivities = async () => {
+    if (selectedActivities.length === 0) {
+      setSaveMessage({ type: 'error', text: 'Please select at least 1 activity' })
+      setTimeout(() => setSaveMessage(null), 3000)
+      return
+    }
+
+    setSaving(true)
+    setSaveMessage(null)
+
+    try {
+      const result = await saveSelectedActivities(selectedActivities)
+
+      if (result.error) {
+        setSaveMessage({ type: 'error', text: result.error })
+      } else {
+        setSaveMessage({ type: 'success', text: `Successfully saved ${selectedActivities.length} activity(ies)!` })
+        // Clear selections after successful save
+        setTimeout(() => {
+          setSelectedActivities([])
+          setSaveMessage(null)
+        }, 2000)
+      }
+    } catch (err) {
+      setSaveMessage({ type: 'error', text: 'Failed to save activities' })
+    } finally {
+      setSaving(false)
+      setTimeout(() => setSaveMessage(null), 5000)
+    }
   }
 
   // Loading state
@@ -178,35 +223,89 @@ export default function RelaxationPage() {
             </div>
           )}
 
+          {saveMessage && (
+            <div className={`mb-8 rounded-2xl border px-4 py-3 text-white ${
+              saveMessage.type === 'success'
+                ? 'bg-green-500/30 border-green-400/50'
+                : 'bg-red-500/30 border-red-400/50'
+            }`}>
+              {saveMessage.text}
+            </div>
+          )}
+
+          {/* Save Button */}
+          {activities.length > 0 && (
+            <div className="mb-8 flex items-center justify-between bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
+              <div className="text-white">
+                <p className="text-lg font-semibold">
+                  {selectedActivities.length} of {activities.length} selected
+                </p>
+                <p className="text-sm text-white/80">
+                  Select at least 1 activity to save
+                </p>
+              </div>
+              <button
+                onClick={handleSaveActivities}
+                disabled={saving || selectedActivities.length === 0}
+                className={`px-6 py-3 rounded-full font-semibold transition-all ${
+                  selectedActivities.length === 0
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-white text-[#A4B870] hover:bg-gray-100 shadow-lg'
+                } disabled:opacity-50`}
+              >
+                {saving ? 'Saving...' : 'Save Selected Activities'}
+              </button>
+            </div>
+          )}
+
           {/* Activities list */}
           <div className="space-y-6">
-            {activities.map((activity, index) => (
-              <div
-                key={activity.id}
-                className={`flex ${
-                  index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'
-                } items-center gap-0 bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow`}
-              >
-                {/* Text content */}
-                <div className="flex-1 p-8">
-                  <h2 className="text-3xl font-bold text-[#A4B870] mb-4">
-                    {activity.title}
-                  </h2>
-                  <p className="text-gray-600 leading-relaxed">
-                    {activity.description}
-                  </p>
-                </div>
+            {activities.map((activity, index) => {
+              const isSelected = selectedActivities.includes(activity.id)
 
-                {/* Image */}
-                <div className="flex-1 h-64 bg-gray-200 relative overflow-hidden">
-                  <img
-                    src={activity.image}
-                    alt={activity.title}
-                    className="w-full h-full object-cover"
-                  />
+              return (
+                <div
+                  key={activity.id}
+                  onClick={() => toggleActivity(activity.id)}
+                  className={`flex cursor-pointer ${
+                    index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'
+                  } items-center gap-0 bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all relative ${
+                    isSelected ? 'ring-4 ring-white ring-offset-4 ring-offset-[#A4B870]' : ''
+                  }`}
+                >
+                  {/* Selection Indicator */}
+                  {isSelected && (
+                    <div className="absolute top-4 right-4 z-10 bg-[#A4B870] text-white rounded-full p-2 shadow-lg">
+                      <Check size={24} />
+                    </div>
+                  )}
+
+                  {/* Text content */}
+                  <div className="flex-1 p-8">
+                    <h2 className="text-3xl font-bold text-[#A4B870] mb-4">
+                      {activity.title}
+                    </h2>
+                    <p className="text-gray-600 leading-relaxed">
+                      {activity.description}
+                    </p>
+                    <div className="mt-4">
+                      <span className="inline-block px-3 py-1 bg-[#A4B870]/10 text-[#6E8450] text-sm rounded-full">
+                        {activity.category}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Image */}
+                  <div className="flex-1 h-64 bg-gray-200 relative overflow-hidden">
+                    <img
+                      src={activity.image}
+                      alt={activity.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
           </div>
         </main>
