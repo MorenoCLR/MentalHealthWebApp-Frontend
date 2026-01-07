@@ -172,47 +172,9 @@ export async function getRelaxationSuggestions() {
 }
 
 export async function saveRelaxationSuggestion(activityId: string) {
-  const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    redirect('/login')
-  }
-
-  // Get the most recent mood
-  const { data: recentMood } = await supabase
-    .from('moods')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('mood_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (!recentMood) {
-    return { error: 'No recent mood found' }
-  }
-
-  const activity = RELAXATION_ACTIVITIES.find(a => a.id === activityId)
-
-  if (!activity) {
-    return { error: 'Activity not found' }
-  }
-
-  const { error } = await supabase
-    .from('relaxation_suggestions')
-    .insert({
-      user_id: user.id,
-      mood_id: recentMood.id,
-      activity_suggestion: JSON.stringify(activity)
-    })
-
-  if (error) {
-    console.error('Error saving relaxation suggestion:', error)
-    return { error: error.message }
-  }
-
-  return { success: true }
+  // Wrapper function that calls saveSelectedActivities with single activity
+  // This maintains backward compatibility while using the primary multi-select function
+  return saveSelectedActivities([activityId])
 }
 
 export async function saveSelectedActivities(activityIds: string[]) {

@@ -97,7 +97,7 @@ app/
 
 2. **Dashboard Data Aggregation**: `app/dashboard/actions.ts` contains `getDashboardData()` which aggregates data from multiple Supabase tables (moods, physical_health, articles, journal, goal) in a single server action call to minimize client-server round trips.
 
-3. **Relaxation Activity Filtering**: The app filters relaxation activities based on mood rating. Activities have `minMood` and `maxMood` ranges. The filtering logic is in both `app/relaxation/actions.ts` and duplicated in `app/dashboard/actions.ts` (line 66-135) for dashboard suggestions.
+3. **Relaxation Activity Filtering**: The app filters relaxation activities based on mood rating. Activities have `minMood` and `maxMood` ranges. The filtering logic is in both `app/relaxation/actions.ts` and duplicated in `app/dashboard/actions.ts` (line 66-135) for dashboard suggestions. Users can select multiple activities (minimum 1, maximum all available) and save them via `saveSelectedActivities()` which performs a batch insert.
 
 4. **Client State Management**: Pages use React `useState` and `useEffect` for client state. No global state management library is used. Data is fetched via server actions and cached locally in component state.
 
@@ -112,12 +112,13 @@ app/
 ### Database Schema (Inferred)
 
 Key Supabase tables:
-- `users` - username, full_name (extends Supabase auth.users)
+- `users` - username, full_name, phone_number (extends Supabase auth.users)
 - `moods` - mood_rating (1-5), mood_at, user_id
 - `physical_health` - complaints (JSON with weight, sleepHours, stepCounts), user_id
 - `journal` - title, content, date_created, user_id
 - `goal` - name, target (date or "Indefinite"), progress ("In Progress", "Completed"), user_id
 - `articles` - title, content, date_published
+- `relaxation_suggestions` - user_id, mood_id, activity_suggestion (JSON), created_at
 
 ### Important Implementation Details
 
@@ -133,12 +134,71 @@ Key Supabase tables:
 
 6. **API Routes vs Server Actions**: The app uses both patterns. Some features use API routes (`/api/*`) called via `fetch()` from client components (e.g., mood-today check), while others use server actions directly. Prefer server actions for new features.
 
+7. **Database Column Naming**: The `users` table uses `phone_number` as the column name, but form fields and local state may use `phone` for brevity. Always map `phone` → `phone_number` when writing to the database and `phone_number` → `phone` when reading.
+
+8. **Form Validation Pattern**: Client-side validation for login and registration uses error state with red borders and error messages. Pattern:
+   - Error state: `border-red-400 bg-red-50 focus:ring-red-400`
+   - Error message: `<p className="text-red-500 text-sm mt-1 text-left">{error}</p>`
+   - Errors clear on input change via `onChange` handlers
+
+9. **Activity Selection UI**: The relaxation page allows multi-select of activities with visual feedback:
+   - Selected cards show `ring-4 ring-white ring-offset-4` with checkmark icon
+   - Click to toggle selection
+   - Save button disabled when no selections
+   - Success/error messages auto-dismiss after timeout
+
+## Key Implementation Patterns
+
+### Form Validation
+Client-side validation should follow this pattern (see `app/login/page.tsx`):
+```tsx
+const [emailError, setEmailError] = useState<string>("")
+const [passwordError, setPasswordError] = useState<string>("")
+
+// In JSX:
+<input
+  value={email}
+  onChange={(e) => {
+    setEmail(e.target.value)
+    setEmailError("")  // Clear error on change
+  }}
+  className={`... ${
+    emailError ? "border-red-400 bg-red-50 focus:ring-red-400" : "border-gray-200 focus:ring-[#A4B870]"
+  }`}
+/>
+{emailError && (
+  <p className="text-red-500 text-sm mt-1 text-left">{emailError}</p>
+)}
+```
+
+### Multi-Select UI Pattern
+For selectable lists (see `app/relaxation/page.tsx`):
+```tsx
+const [selectedItems, setSelectedItems] = useState<string[]>([])
+
+const toggleItem = (id: string) => {
+  setSelectedItems(prev =>
+    prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+  )
+}
+
+// Visual indicator:
+className={`... ${isSelected ? 'ring-4 ring-white ring-offset-4 ring-offset-[#A4B870]' : ''}`}
+```
+
+### Database Field Mapping
+When working with user profiles:
+- Database column: `phone_number`
+- Form field/state: `phone`
+- Always map between them: `phone_number: phone` (insert), `phone: user.phone_number` (select)
+
 ## Testing Considerations
 
 - No test suite currently exists
 - When adding tests, consider authentication mocking for server actions
 - Test mood filtering logic for relaxation activities
 - Test date-based goal filtering for "today's goals"
+- Test batch insert for multiple activity selections
 
 ## Styling
 
@@ -146,3 +206,17 @@ Key Supabase tables:
 - Custom color palette: Primary green `#A4B870`, darker green `#6E8450`, coral `#FF8C69`, neutral `#F5F5F0`
 - Components use rounded corners (rounded-3xl, rounded-2xl) and soft shadows
 - Responsive design with mobile-first approach using md: breakpoints
+
+### Common UI Patterns
+- **Error state inputs**: `border-red-400 bg-red-50 focus:ring-red-400`
+- **Success messages**: `bg-green-500/30 border-green-400/50 text-white`
+- **Error messages**: `bg-red-500/30 border-red-400/50 text-white`
+- **Selection rings**: `ring-4 ring-white ring-offset-4 ring-offset-[color]`
+- **Disabled buttons**: `bg-gray-400 text-gray-200 cursor-not-allowed`
+- **Loading state**: `disabled:opacity-50`
+- **Cards with backdrop blur**: `bg-white/90 backdrop-blur-md`
+
+## Additional Documentation
+
+- **FEATURE_FUNCTIONS.md**: Comprehensive documentation of all 36+ server actions, client functions, and API routes with detailed parameters, return types, and behaviors
+- **.github/copilot-instructions.md**: Detailed AI agent instructions covering Supabase client patterns, authentication architecture, database schema, and common debugging issues
